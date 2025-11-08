@@ -1,0 +1,204 @@
+[
+  {
+    "tutor_id": "tutor_00001",
+    "name": "Allison Hill",
+    "email": "donaldgarcia@example.net",
+    "age": 65,
+    "location": "New Roberttown",
+    "education_level": "Bachelor's Degree",
+    "subjects": [
+      "Writing",
+      "French",
+      "English"
+    ],
+    "subject_type": "Language",
+    "onboarding_date": "2025-11-06T20:48:06.445415",
+    "tenure_days": 1,
+    "behavioral_archetype": "new_tutor",
+    "baseline_sessions_per_week": 8,
+    "status": "active",
+    "created_at": "2025-11-06T20:48:06.445415",
+    "updated_at": "2025-11-07T20:48:06.445716"
+  },
+  {
+    "tutor_id": "tutor_00002",
+    "name": "David Guzman",
+    "email": "jennifermiles@example.com",
+    "age": 54,
+    "location": "South Bridget",
+    "education_level": "Bachelor's Degree",
+    "subjects": [
+      "Geometry"
+    ],
+    "subject_type": "STEM",
+    "onboarding_date": "2025-11-05T20:48:06.445727",
+    "tenure_days": 2,
+    "behavioral_archetype": "new_tutor",
+    "baseline_sessions_per_week": 12,
+    "status": "active",
+    "created_at": "2025-11-05T20:48:06.445727",
+    "updated_at": "2025-11-07T20:48:06.446015"
+  },
+  {
+    "tutor_id": "tutor_00003",
+    "name": "Abigail Shaffer",
+    "email": "jpeterson@example.org",
+    "age": 22,
+    "location": "Curtisfurt",
+    "education_level": "Some College",
+    "subjects": [
+      "GRE Prep",
+      "SAT Prep",
+      "ACT Prep"
+    ],
+    "subject_type": "TestPrep",
+    "onboarding_date": "2025-10-15T20:48:06.446022",
+    "tenure_days": 23,
+    "behavioral_archetype": "new_tutor",
+    "baseline_sessions_per_week": 13,
+    "status": "active",
+    "created_at": "2025-10-15T20:48:06.446022",
+    "updated_at": "2025-11-07T20:48:06.446249"
+  },
+  {
+    "tutor_id": "tutor_00004",
+    "name": "Ryan Munoz",
+    "email": "blairamanda@example.com",
+    "age": 28,
+    "location": "New Kellystad",
+    "education_level": "Bachelor's Degree",
+    "subjects": [
+      "Geometry",
+      "Biology"
+    ],
+    "subject_type": "STEM",
+    "onboarding_date": "2025-10-27T20:48:06.446261",
+    "tenure_days": 11,
+    "behavioral_archetype": "new_tutor",
+    "baseline_sessions_per_week": 15,
+    "status": "active",
+    "created_at": "2025-10-27T20:48:06.446261",
+    "updated_at": "2025-11-07T20:48:06.446432"
+  },
+  {
+    "tutor_id": "tutor_00005",
+    "name": "Michele Williams",
+    "email": "kendragalloway@example.org",
+    "age": 56,
+    "location": "South Joshuastad",
+    "education_level": "Bachelor's Degree",
+    "subjects": [
+      "AP Test Prep",
+      "SAT Prep"
+    ],
+    "subject_type": "TestPrep",
+    "onboarding_date": "2024-10-06T20:48:06.446437",
+    "tenure_days": 397,
+    "behavioral_archetype": "at_risk",
+    "baseline_sessions_per_week": 15,
+    "status": "active",
+    "created_at": "2024-10-06T20:48:06.446437",
+    "updated_at": "2025-11-07T20:48:06.446575"
+  },
+  {
+    "tutor_id": "tutor_00006",
+    "name": "Henry Santiago",
+    "email": "lynchgeorge@example.net",
+    "age": 58,
+    "location": "East Steven",
+    "education_level": "Master's Degree",
+    "subjects": [
+      "AP Test Prep"
+    ],
+    "subject_type": "TestPrep",
+    "onboarding_date": "2024-09-16T20:48:06.446579",
+    "tenure_days": 417,
+    "behavioral_archetype": "churner",
+    "baseline_sessions_per_week": 10,
+    "status": "active",
+    "created_at": "2024-09-16T20:48:06.446579",
+    "updated_at": "2025-11-07T20:48:06.446708"
+  },
+  {
+    "tutor_id": "tutor_00007",
+    "name": "Timothy Watts",
+    "email": "gabriellecameron@example.org",
+    "age": 46,
+    "location": "Port Antonio",
+    "education_level": "Master's Degree",
+    "subjects": [
+      "Physics",
+      "Mathematics",
+      "Algebra"
+    ],
+    "subject_type": "STEM",
+    "onboarding_date": "2025-11-05T20:48:06.446711",
+    "tenure_days": 2,
+    "behavioral_archetype": "new_tutor",
+    "baseline_sessions_per_week": 8,
+    "status": "active",
+    "created_at": "2025-11-05T20:48:06.446711",
+    "updated_at": "2025-11-07T20:48:06.446840"
+  },
+  {
+    "tutor_id": "tutor_00008",
+    "name": "Derek Clark",
+    "email": "jason76@example.net",
+    "age": 64,
+    "location": "Thomasberg",
+    "education_level": "Master's Degree",
+    "subjects": [
+      "Literature"
+    ],
+    "subject_type": "Language",
+    "onboarding_date": "2024-09-30T20:48:06.446846",
+    "tenure_days": 403,
+    "behavioral_archetype": "at_risk",
+    "baseline_sessions_per_week": 11,
+    "status": "active",
+    "created_at": "2024-09-30T20:48:06.446846",
+    "updated_at": "2025-11-07T20:48:06.446962"
+  },
+  {
+    "tutor_id": "tutor_00009",
+    "name": "Justin Baker",
+    "email": "zhurst@example.com",
+    "age": 32,
+    "location": "East William",
+    "education_level": "Bachelor's Degree",
+    "subjects": [
+      "Calculus",
+      "Physics",
+      "Chemistry"
+    ],
+    "subject_type": "STEM",
+    "onboarding_date": "2025-10-16T20:48:06.446965",
+    "tenure_days": 22,
+    "behavioral_archetype": "new_tutor",
+    "baseline_sessions_per_week": 12,
+    "status": "active",
+    "created_at": "2025-10-16T20:48:06.446965",
+    "updated_at": "2025-11-07T20:48:06.447075"
+  },
+  {
+    "tutor_id": "tutor_00010",
+    "name": "Anthony Rodriguez",
+    "email": "laurahenderson@example.org",
+    "age": 36,
+    "location": "Jamesmouth",
+    "education_level": "Bachelor's Degree",
+    "subjects": [
+      "ACT Prep",
+      "AP Test Prep",
+      "GRE Prep"
+    ],
+    "subject_type": "TestPrep",
+    "onboarding_date": "2023-12-23T20:48:06.447078",
+    "tenure_days": 685,
+    "behavioral_archetype": "at_risk",
+    "baseline_sessions_per_week": 8,
+    "status": "active",
+    "created_at": "2023-12-23T20:48:06.447078",
+    "updated_at": "2025-11-07T20:48:06.447219"
+  }
+]
