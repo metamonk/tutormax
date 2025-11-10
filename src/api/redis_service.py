@@ -28,6 +28,19 @@ class RedisService:
     SESSION_QUEUE = "tutormax:queue:sessions"
     FEEDBACK_QUEUE = "tutormax:queue:feedbacks"
 
+    # Cache key prefixes
+    PREDICTION_CACHE_PREFIX = "tutormax:cache:prediction:"
+    DASHBOARD_CACHE_PREFIX = "tutormax:cache:dashboard:"
+    METRICS_CACHE_PREFIX = "tutormax:cache:metrics:"
+    TUTOR_LIST_CACHE_KEY = "tutormax:cache:tutor_list"
+    INTERVENTION_STATS_CACHE_KEY = "tutormax:cache:intervention_stats"
+
+    # Cache TTL (time to live in seconds)
+    PREDICTION_CACHE_TTL = 3600  # 1 hour
+    DASHBOARD_CACHE_TTL = 300  # 5 minutes
+    METRICS_CACHE_TTL = 600  # 10 minutes
+    TUTOR_LIST_CACHE_TTL = 180  # 3 minutes
+
     def __init__(self, redis_url: str = "redis://localhost:6379/0"):
         """
         Initialize Redis service.
@@ -199,6 +212,379 @@ class RedisService:
             "sessions": await self.get_queue_length(self.SESSION_QUEUE),
             "feedbacks": await self.get_queue_length(self.FEEDBACK_QUEUE),
         }
+
+    async def cache_prediction(
+        self,
+        tutor_id: str,
+        prediction_data: Dict[str, Any],
+        ttl: Optional[int] = None
+    ) -> bool:
+        """
+        Cache a churn prediction result.
+
+        Args:
+            tutor_id: Tutor ID
+            prediction_data: Prediction result dictionary
+            ttl: Time to live in seconds (default: PREDICTION_CACHE_TTL)
+
+        Returns:
+            True if successfully cached, False otherwise
+        """
+        if not self.redis_client:
+            logger.error("Redis client not initialized")
+            return False
+
+        try:
+            cache_key = f"{self.PREDICTION_CACHE_PREFIX}{tutor_id}"
+            ttl_seconds = ttl or self.PREDICTION_CACHE_TTL
+
+            # Serialize prediction data
+            prediction_json = json.dumps(prediction_data)
+
+            # Set with expiration
+            await self.redis_client.setex(
+                cache_key,
+                ttl_seconds,
+                prediction_json
+            )
+
+            logger.debug(f"Cached prediction for tutor {tutor_id} (TTL: {ttl_seconds}s)")
+            return True
+
+        except RedisError as e:
+            logger.error(f"Failed to cache prediction for {tutor_id}: {e}")
+            return False
+        except (TypeError, ValueError) as e:
+            logger.error(f"Failed to serialize prediction for {tutor_id}: {e}")
+            return False
+
+    async def get_cached_prediction(self, tutor_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve cached prediction for a tutor.
+
+        Args:
+            tutor_id: Tutor ID
+
+        Returns:
+            Cached prediction data if exists, None otherwise
+        """
+        if not self.redis_client:
+            return None
+
+        try:
+            cache_key = f"{self.PREDICTION_CACHE_PREFIX}{tutor_id}"
+
+            # Get from cache
+            cached_data = await self.redis_client.get(cache_key)
+
+            if cached_data:
+                prediction = json.loads(cached_data)
+                logger.debug(f"Cache hit for tutor {tutor_id}")
+                return prediction
+            else:
+                logger.debug(f"Cache miss for tutor {tutor_id}")
+                return None
+
+        except RedisError as e:
+            logger.error(f"Failed to retrieve cached prediction for {tutor_id}: {e}")
+            return None
+        except (TypeError, ValueError) as e:
+            logger.error(f"Failed to deserialize cached prediction for {tutor_id}: {e}")
+            return None
+
+    async def invalidate_prediction_cache(self, tutor_id: str) -> bool:
+        """
+        Invalidate cached prediction for a tutor.
+
+        Args:
+            tutor_id: Tutor ID
+
+        Returns:
+            True if successfully invalidated, False otherwise
+        """
+        if not self.redis_client:
+            return False
+
+        try:
+            cache_key = f"{self.PREDICTION_CACHE_PREFIX}{tutor_id}"
+            await self.redis_client.delete(cache_key)
+            logger.debug(f"Invalidated prediction cache for tutor {tutor_id}")
+            return True
+
+        except RedisError as e:
+            logger.error(f"Failed to invalidate prediction cache for {tutor_id}: {e}")
+            return False
+
+    # Dashboard caching methods
+    async def cache_dashboard_data(
+        self,
+        dashboard_key: str,
+        dashboard_data: Dict[str, Any],
+        ttl: Optional[int] = None
+    ) -> bool:
+        """
+        Cache dashboard data.
+
+        Args:
+            dashboard_key: Unique key for the dashboard (e.g., 'main', 'tutor_123')
+            dashboard_data: Dashboard data dictionary
+            ttl: Time to live in seconds (default: DASHBOARD_CACHE_TTL)
+
+        Returns:
+            True if successfully cached, False otherwise
+        """
+        if not self.redis_client:
+            logger.error("Redis client not initialized")
+            return False
+
+        try:
+            cache_key = f"{self.DASHBOARD_CACHE_PREFIX}{dashboard_key}"
+            ttl_seconds = ttl or self.DASHBOARD_CACHE_TTL
+
+            # Serialize dashboard data
+            data_json = json.dumps(dashboard_data)
+
+            # Set with expiration
+            await self.redis_client.setex(cache_key, ttl_seconds, data_json)
+
+            logger.debug(f"Cached dashboard data for {dashboard_key} (TTL: {ttl_seconds}s)")
+            return True
+
+        except RedisError as e:
+            logger.error(f"Failed to cache dashboard data for {dashboard_key}: {e}")
+            return False
+        except (TypeError, ValueError) as e:
+            logger.error(f"Failed to serialize dashboard data for {dashboard_key}: {e}")
+            return False
+
+    async def get_cached_dashboard_data(self, dashboard_key: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve cached dashboard data.
+
+        Args:
+            dashboard_key: Unique key for the dashboard
+
+        Returns:
+            Cached dashboard data if exists, None otherwise
+        """
+        if not self.redis_client:
+            return None
+
+        try:
+            cache_key = f"{self.DASHBOARD_CACHE_PREFIX}{dashboard_key}"
+            cached_data = await self.redis_client.get(cache_key)
+
+            if cached_data:
+                data = json.loads(cached_data)
+                logger.debug(f"Cache hit for dashboard {dashboard_key}")
+                return data
+            else:
+                logger.debug(f"Cache miss for dashboard {dashboard_key}")
+                return None
+
+        except RedisError as e:
+            logger.error(f"Failed to retrieve cached dashboard data for {dashboard_key}: {e}")
+            return None
+        except (TypeError, ValueError) as e:
+            logger.error(f"Failed to deserialize cached dashboard data for {dashboard_key}: {e}")
+            return None
+
+    async def invalidate_dashboard_cache(self, dashboard_key: str) -> bool:
+        """
+        Invalidate cached dashboard data.
+
+        Args:
+            dashboard_key: Unique key for the dashboard
+
+        Returns:
+            True if successfully invalidated, False otherwise
+        """
+        if not self.redis_client:
+            return False
+
+        try:
+            cache_key = f"{self.DASHBOARD_CACHE_PREFIX}{dashboard_key}"
+            await self.redis_client.delete(cache_key)
+            logger.debug(f"Invalidated dashboard cache for {dashboard_key}")
+            return True
+
+        except RedisError as e:
+            logger.error(f"Failed to invalidate dashboard cache for {dashboard_key}: {e}")
+            return False
+
+    # Aggregated metrics caching
+    async def cache_metrics(
+        self,
+        metric_key: str,
+        metrics_data: Dict[str, Any],
+        ttl: Optional[int] = None
+    ) -> bool:
+        """
+        Cache aggregated metrics.
+
+        Args:
+            metric_key: Unique key for the metrics (e.g., 'churn_rates', 'performance_summary')
+            metrics_data: Metrics data dictionary
+            ttl: Time to live in seconds (default: METRICS_CACHE_TTL)
+
+        Returns:
+            True if successfully cached, False otherwise
+        """
+        if not self.redis_client:
+            logger.error("Redis client not initialized")
+            return False
+
+        try:
+            cache_key = f"{self.METRICS_CACHE_PREFIX}{metric_key}"
+            ttl_seconds = ttl or self.METRICS_CACHE_TTL
+
+            # Serialize metrics data
+            data_json = json.dumps(metrics_data)
+
+            # Set with expiration
+            await self.redis_client.setex(cache_key, ttl_seconds, data_json)
+
+            logger.debug(f"Cached metrics for {metric_key} (TTL: {ttl_seconds}s)")
+            return True
+
+        except RedisError as e:
+            logger.error(f"Failed to cache metrics for {metric_key}: {e}")
+            return False
+        except (TypeError, ValueError) as e:
+            logger.error(f"Failed to serialize metrics for {metric_key}: {e}")
+            return False
+
+    async def get_cached_metrics(self, metric_key: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve cached metrics.
+
+        Args:
+            metric_key: Unique key for the metrics
+
+        Returns:
+            Cached metrics if exists, None otherwise
+        """
+        if not self.redis_client:
+            return None
+
+        try:
+            cache_key = f"{self.METRICS_CACHE_PREFIX}{metric_key}"
+            cached_data = await self.redis_client.get(cache_key)
+
+            if cached_data:
+                data = json.loads(cached_data)
+                logger.debug(f"Cache hit for metrics {metric_key}")
+                return data
+            else:
+                logger.debug(f"Cache miss for metrics {metric_key}")
+                return None
+
+        except RedisError as e:
+            logger.error(f"Failed to retrieve cached metrics for {metric_key}: {e}")
+            return None
+        except (TypeError, ValueError) as e:
+            logger.error(f"Failed to deserialize cached metrics for {metric_key}: {e}")
+            return None
+
+    async def invalidate_metrics_cache(self, metric_key: str) -> bool:
+        """
+        Invalidate cached metrics.
+
+        Args:
+            metric_key: Unique key for the metrics
+
+        Returns:
+            True if successfully invalidated, False otherwise
+        """
+        if not self.redis_client:
+            return False
+
+        try:
+            cache_key = f"{self.METRICS_CACHE_PREFIX}{metric_key}"
+            await self.redis_client.delete(cache_key)
+            logger.debug(f"Invalidated metrics cache for {metric_key}")
+            return True
+
+        except RedisError as e:
+            logger.error(f"Failed to invalidate metrics cache for {metric_key}: {e}")
+            return False
+
+    # Cache warming
+    async def warm_cache(self, session) -> Dict[str, bool]:
+        """
+        Warm cache with frequently accessed data.
+
+        This method should be called during application startup or periodically
+        to pre-load commonly accessed data into the cache.
+
+        Args:
+            session: Database session for fetching data to warm cache
+
+        Returns:
+            Dictionary indicating success/failure for each cache warming operation
+        """
+        results = {}
+        logger.info("Starting cache warming...")
+
+        try:
+            # Warm tutor list cache (if we have a method to fetch all tutors)
+            # This would need to be implemented based on your data access layer
+            # For now, just mark as pending
+            results['tutor_list'] = False
+            logger.debug("Tutor list cache warming not yet implemented")
+
+            # Warm intervention stats cache
+            results['intervention_stats'] = False
+            logger.debug("Intervention stats cache warming not yet implemented")
+
+            # Warm dashboard data cache for main dashboard
+            results['main_dashboard'] = False
+            logger.debug("Main dashboard cache warming not yet implemented")
+
+            logger.info(f"Cache warming completed: {results}")
+            return results
+
+        except Exception as e:
+            logger.error(f"Error during cache warming: {e}", exc_info=True)
+            return results
+
+    async def get_cache_stats(self) -> Dict[str, Any]:
+        """
+        Get cache statistics including hit/miss rates and memory usage.
+
+        Returns:
+            Dictionary with cache statistics
+        """
+        if not self.redis_client:
+            return {"error": "Redis client not initialized"}
+
+        try:
+            # Get Redis info
+            info = await self.redis_client.info('stats')
+
+            # Get key counts for different cache types
+            prediction_keys = len(await self.redis_client.keys(f"{self.PREDICTION_CACHE_PREFIX}*"))
+            dashboard_keys = len(await self.redis_client.keys(f"{self.DASHBOARD_CACHE_PREFIX}*"))
+            metrics_keys = len(await self.redis_client.keys(f"{self.METRICS_CACHE_PREFIX}*"))
+
+            return {
+                "prediction_cache_keys": prediction_keys,
+                "dashboard_cache_keys": dashboard_keys,
+                "metrics_cache_keys": metrics_keys,
+                "total_cache_keys": prediction_keys + dashboard_keys + metrics_keys,
+                "keyspace_hits": info.get('keyspace_hits', 0),
+                "keyspace_misses": info.get('keyspace_misses', 0),
+                "hit_rate": (
+                    info.get('keyspace_hits', 0) /
+                    (info.get('keyspace_hits', 0) + info.get('keyspace_misses', 1))
+                    if (info.get('keyspace_hits', 0) + info.get('keyspace_misses', 0)) > 0
+                    else 0
+                )
+            }
+
+        except RedisError as e:
+            logger.error(f"Failed to get cache stats: {e}")
+            return {"error": str(e)}
 
 
 # Global Redis service instance

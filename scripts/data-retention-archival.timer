@@ -1,0 +1,16 @@
+[Unit]
+Description=TutorMax Data Archival Timer (Quarterly)
+Documentation=https://github.com/tutormax/tutormax
+Requires=data-retention-archival.service
+
+[Timer]
+# Quarterly on first day of quarter at 4 AM
+# Runs on January 1, April 1, July 1, October 1
+OnCalendar=*-01,04,07,10-01 04:00:00
+Persistent=true
+
+# Alternative: Monthly on first day at 4 AM
+# OnCalendar=*-*-01 04:00:00
+
+[Install]
+WantedBy=timers.target

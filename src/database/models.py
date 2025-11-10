@@ -18,6 +18,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from fastapi_users_db_sqlalchemy import SQLAlchemyBaseUserTable
 import enum
 
 
@@ -26,7 +27,20 @@ class Base(DeclarativeBase):
     pass
 
 
+# FastAPI Users needs its own base - we'll create User first, then use its metadata for other models
+# This avoids registry conflicts with SQLAlchemy 2.0
+
+
 # Enums for type safety
+class UserRole(str, enum.Enum):
+    """User role for RBAC."""
+    ADMIN = "admin"
+    OPERATIONS_MANAGER = "operations_manager"
+    PEOPLE_OPS = "people_ops"
+    TUTOR = "tutor"
+    STUDENT = "student"
+
+
 class TutorStatus(str, enum.Enum):
     """Tutor account status."""
     ACTIVE = "active"
@@ -95,6 +109,29 @@ class InterventionOutcome(str, enum.Enum):
     CHURNED = "churned"
 
 
+class NotificationType(str, enum.Enum):
+    """Type of notification."""
+    EMAIL = "email"
+    IN_APP = "in_app"
+    BOTH = "both"
+
+
+class NotificationStatus(str, enum.Enum):
+    """Status of notification delivery."""
+    PENDING = "pending"
+    SENT = "sent"
+    FAILED = "failed"
+    READ = "read"
+
+
+class NotificationPriority(str, enum.Enum):
+    """Priority level for notifications."""
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+    CRITICAL = "critical"
+
+
 class MetricWindow(str, enum.Enum):
     """Time window for metric calculation."""
     SEVEN_DAY = "7day"
@@ -102,7 +139,85 @@ class MetricWindow(str, enum.Enum):
     NINETY_DAY = "90day"
 
 
+class OAuthProvider(str, enum.Enum):
+    """OAuth provider for SSO."""
+    GOOGLE = "google"
+    MICROSOFT = "microsoft"
+    CUSTOM = "custom"
+    LOCAL = "local"  # For email/password authentication
+
+
 # ORM Models
+
+
+class User(Base, SQLAlchemyBaseUserTable[int]):
+    """
+    User entity for authentication and RBAC.
+    Represents all users in the system (tutors, students, staff).
+
+    Inherits from:
+    - Base: Provides SQLAlchemy registry and metadata
+    - SQLAlchemyBaseUserTable[int]: Provides FastAPI-Users standard fields
+      (email, hashed_password, is_active, is_superuser, is_verified)
+
+    Note: The id field must be explicitly defined when using SQLAlchemy 2.0.
+    """
+    __tablename__ = "users"
+
+    # Primary key - required for SQLAlchemy 2.0 with FastAPI-Users
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+
+    # Custom fields beyond FastAPI-Users base
+    full_name: Mapped[str] = mapped_column(String(200), nullable=False)
+
+    # OAuth fields
+    oauth_provider: Mapped[Optional[OAuthProvider]] = mapped_column(
+        SQLEnum(OAuthProvider, native_enum=False),
+        nullable=True  # Null for local auth
+    )
+    oauth_subject: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # OAuth provider's user ID
+
+    # Role and status
+    roles: Mapped[List[UserRole]] = mapped_column(
+        ARRAY(SQLEnum(UserRole, native_enum=False)),
+        nullable=False,
+        default=[]
+    )
+
+    # Linked entity IDs (if applicable)
+    tutor_id: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        ForeignKey("tutors.tutor_id", ondelete="SET NULL"),
+        nullable=True,
+        unique=True
+    )
+    student_id: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        ForeignKey("students.student_id", ondelete="SET NULL"),
+        nullable=True,
+        unique=True
+    )
+
+    # Security tracking
+    last_login: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    password_changed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    failed_login_attempts: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    locked_until: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return f"<User(id={self.id}, email={self.email}, roles={self.roles})>"
 
 
 class Tutor(Base):
@@ -173,6 +288,11 @@ class Tutor(Base):
         back_populates="tutor",
         cascade="all, delete-orphan"
     )
+    manager_notes: Mapped[List["ManagerNote"]] = relationship(
+        "ManagerNote",
+        back_populates="tutor",
+        cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Tutor(tutor_id={self.tutor_id}, name={self.name}, status={self.status})>"
@@ -190,6 +310,17 @@ class Student(Base):
     age: Mapped[int] = mapped_column(Integer, nullable=True)
     grade_level: Mapped[str] = mapped_column(String(50), nullable=True)
     subjects_interested: Mapped[List[str]] = mapped_column(ARRAY(String), nullable=True)
+
+    # COPPA Compliance fields (for students under 13)
+    is_under_13: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    parent_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    parent_consent_given: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    parent_consent_date: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+    parent_consent_ip: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=datetime.utcnow,
@@ -537,7 +668,7 @@ class TutorEvent(Base):
         nullable=False,
         index=True
     )
-    metadata: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    event_metadata: Mapped[Optional[dict]] = mapped_column("metadata", JSONB, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=datetime.utcnow,
@@ -549,3 +680,344 @@ class TutorEvent(Base):
 
     def __repr__(self) -> str:
         return f"<TutorEvent(event_id={self.event_id}, tutor_id={self.tutor_id}, type={self.event_type})>"
+
+
+class Notification(Base):
+    """
+    Notification entity for intervention and system notifications.
+    Tracks both email and in-app notifications sent to tutors and staff.
+    """
+    __tablename__ = "notifications"
+
+    notification_id: Mapped[str] = mapped_column(String(50), primary_key=True)
+    recipient_id: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        index=True,
+        comment="Tutor ID or staff member ID"
+    )
+    recipient_email: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        index=True
+    )
+    notification_type: Mapped[NotificationType] = mapped_column(
+        SQLEnum(NotificationType, native_enum=False),
+        nullable=False
+    )
+    priority: Mapped[NotificationPriority] = mapped_column(
+        SQLEnum(NotificationPriority, native_enum=False),
+        default=NotificationPriority.MEDIUM,
+        nullable=False,
+        index=True
+    )
+    status: Mapped[NotificationStatus] = mapped_column(
+        SQLEnum(NotificationStatus, native_enum=False),
+        default=NotificationStatus.PENDING,
+        nullable=False,
+        index=True
+    )
+
+    # Content
+    subject: Mapped[str] = mapped_column(String(500), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    html_body: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Context
+    intervention_id: Mapped[Optional[str]] = mapped_column(
+        String(50),
+        ForeignKey("interventions.intervention_id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
+    intervention_type: Mapped[Optional[InterventionType]] = mapped_column(
+        SQLEnum(InterventionType, native_enum=False),
+        nullable=True
+    )
+
+    # Delivery tracking
+    sent_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+    read_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+    failed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+    failure_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    retry_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
+    # Metadata (using 'notification_metadata' to avoid SQLAlchemy reserved word)
+    notification_metadata: Mapped[Optional[dict]] = mapped_column("metadata", JSONB, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    # Relationships
+    intervention: Mapped[Optional["Intervention"]] = relationship("Intervention", backref="notifications")
+
+    def __repr__(self) -> str:
+        return f"<Notification(notification_id={self.notification_id}, recipient={self.recipient_id}, status={self.status})>"
+
+
+class AuditLog(Base):
+    """
+    Audit log entity for security and compliance tracking.
+    Records all sensitive operations, data access, and authentication events.
+    """
+    __tablename__ = "audit_logs"
+
+    log_id: Mapped[str] = mapped_column(String(50), primary_key=True)
+    user_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
+    action: Mapped[str] = mapped_column(String(100), nullable=False, index=True)  # e.g., "login", "data_access", "update"
+    resource_type: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)  # e.g., "tutor", "session"
+    resource_id: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)  # IPv6 max length
+    user_agent: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    request_method: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)  # GET, POST, etc.
+    request_path: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    status_code: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    success: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    audit_metadata: Mapped[Optional[dict]] = mapped_column("metadata", JSONB, nullable=True)
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        nullable=False,
+        index=True
+    )
+
+    def __repr__(self) -> str:
+        return f"<AuditLog(log_id={self.log_id}, user_id={self.user_id}, action={self.action})>"
+
+
+class ManagerNote(Base):
+    """
+    Manager notes entity for tutor profile annotations.
+    Allows operations managers to add private notes about tutors.
+    """
+    __tablename__ = "manager_notes"
+
+    note_id: Mapped[str] = mapped_column(String(50), primary_key=True)
+    tutor_id: Mapped[str] = mapped_column(
+        String(50),
+        ForeignKey("tutors.tutor_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    author_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True
+    )
+    author_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    note_text: Mapped[str] = mapped_column(Text, nullable=False)
+    is_important: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        nullable=False,
+        index=True
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    # Relationships
+    tutor: Mapped["Tutor"] = relationship("Tutor", back_populates="manager_notes")
+
+    def __repr__(self) -> str:
+        return f"<ManagerNote(note_id={self.note_id}, tutor_id={self.tutor_id}, author={self.author_name})>"
+
+
+class ServiceHealthCheck(Base):
+    """
+    Service health check records for uptime monitoring.
+
+    Tracks health check results for all system services to ensure
+    >99.5% uptime SLA (PRD requirement).
+    """
+    __tablename__ = "service_health_checks"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    service_name: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    status: Mapped[str] = mapped_column(String(20), nullable=False)  # up, down, degraded
+    latency_ms: Mapped[float] = mapped_column(Float, nullable=False, default=0.0)
+    details: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    checked_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        nullable=False,
+        index=True
+    )
+
+    def __repr__(self) -> str:
+        return f"<ServiceHealthCheck(id={self.id}, service={self.service_name}, status={self.status})>"
+
+
+class SLAMetric(Base):
+    """
+    SLA metrics tracking for performance monitoring.
+
+    Tracks key SLA metrics like insight latency (<60 min requirement)
+    and API response times.
+    """
+    __tablename__ = "sla_metrics"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    metric_name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    metric_value: Mapped[float] = mapped_column(Float, nullable=False)
+    metric_unit: Mapped[str] = mapped_column(String(50), nullable=False)  # seconds, milliseconds, percentage
+    threshold: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # SLA threshold
+    meets_sla: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    details: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    recorded_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        nullable=False,
+        index=True
+    )
+
+    def __repr__(self) -> str:
+        return f"<SLAMetric(id={self.id}, metric={self.metric_name}, value={self.metric_value}, meets_sla={self.meets_sla})>"
+
+
+class FirstSessionPrediction(Base):
+    """
+    First session success prediction entity.
+
+    Stores ML predictions for upcoming first sessions to enable
+    proactive tutor preparation and risk mitigation.
+    """
+    __tablename__ = "first_session_predictions"
+
+    prediction_id: Mapped[str] = mapped_column(String(50), primary_key=True)
+    session_id: Mapped[str] = mapped_column(
+        String(50),
+        ForeignKey("sessions.session_id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True
+    )
+    tutor_id: Mapped[str] = mapped_column(
+        String(50),
+        ForeignKey("tutors.tutor_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    student_id: Mapped[str] = mapped_column(
+        String(50),
+        ForeignKey("students.student_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+
+    # Prediction results
+    prediction_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True
+    )
+    risk_probability: Mapped[float] = mapped_column(Float, nullable=False)  # 0-1
+    risk_score: Mapped[int] = mapped_column(Integer, nullable=False)  # 0-100
+    risk_level: Mapped[RiskLevel] = mapped_column(
+        SQLEnum(RiskLevel, native_enum=False),
+        nullable=False,
+        index=True
+    )
+    risk_prediction: Mapped[int] = mapped_column(Integer, nullable=False)  # 0 or 1
+
+    # Model metadata
+    model_version: Mapped[str] = mapped_column(String(50), nullable=False)
+    top_risk_factors: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+    # Alert tracking
+    alert_sent: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    alert_sent_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True
+    )
+
+    # Actual outcome (filled in after session)
+    actual_rating: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    actual_poor_session: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    prediction_correct: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return f"<FirstSessionPrediction(prediction_id={self.prediction_id}, session_id={self.session_id}, risk={self.risk_level})>"
+
+
+class ModelPerformanceLog(Base):
+    """
+    Model performance tracking entity.
+
+    Tracks prediction accuracy and performance metrics over time
+    for model monitoring and retraining decisions.
+    """
+    __tablename__ = "model_performance_logs"
+
+    log_id: Mapped[str] = mapped_column(String(50), primary_key=True)
+    model_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)  # "first_session", "churn", etc.
+    model_version: Mapped[str] = mapped_column(String(50), nullable=False)
+
+    # Performance metrics
+    evaluation_date: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        index=True
+    )
+    accuracy: Mapped[float] = mapped_column(Float, nullable=False)
+    precision: Mapped[float] = mapped_column(Float, nullable=False)
+    recall: Mapped[float] = mapped_column(Float, nullable=False)
+    f1_score: Mapped[float] = mapped_column(Float, nullable=False)
+    auc_roc: Mapped[float] = mapped_column(Float, nullable=False)
+
+    # Sample info
+    sample_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    time_window_days: Mapped[int] = mapped_column(Integer, nullable=False)
+
+    # Additional metrics
+    metrics_detail: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=datetime.utcnow,
+        nullable=False
+    )
+
+    def __repr__(self) -> str:
+        return f"<ModelPerformanceLog(log_id={self.log_id}, model={self.model_type}, accuracy={self.accuracy:.3f})>"

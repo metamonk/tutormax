@@ -1,0 +1,23 @@
+[Unit]
+Description=TutorMax Data Retention Timer
+Documentation=https://github.com/tutormax/tutormax
+Requires=data-retention.service
+
+[Timer]
+# Weekly on Monday at 2 AM
+OnCalendar=Mon *-*-* 02:00:00
+Persistent=true
+
+# Alternative schedules (uncomment as needed):
+
+# Daily at 1 AM
+# OnCalendar=*-*-* 01:00:00
+
+# Monthly on first day at 3 AM
+# OnCalendar=*-*-01 03:00:00
+
+# Quarterly on first day of quarter at 4 AM
+# OnCalendar=*-01,04,07,10-01 04:00:00
+
+[Install]
+WantedBy=timers.target

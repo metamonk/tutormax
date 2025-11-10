@@ -1,0 +1,103 @@
+REAL-TIME METRICS INTEGRATION WITH EXISTING SYSTEM
+===================================================
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        TUTORMAX ARCHITECTURE                             │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+LAYER 1: API & INGESTION (Existing - Task 2)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   FastAPI   │     │   Redis     │     │ PostgreSQL  │
+│   Server    │────►│   Streams   │     │  Database   │
+│  (Task 2)   │     │  (Task 2)   │     │  (Task 2)   │
+└─────────────┘     └─────────────┘     └─────────────┘
+      │                   │                     │
+      │                   │                     │
+      │                   ▼                     ▼
+      │        tutormax:tutors          tutors table
+      │        tutormax:sessions        sessions table
+      │        tutormax:feedback        student_feedback table
+
+
+LAYER 2: DATA PROCESSING PIPELINE (Existing - Task 2)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+      │
+      │ Raw Data
+      ▼
+┌──────────────┐         ┌──────────────┐         ┌──────────────┐
+│ Validation   │────────►│ Enrichment   │────────►│   Database   │
+│   Worker     │         │   Worker     │         │  Persister   │
+│  (Task 2)    │         │  (Task 2)    │         │  (Task 2)    │
+└──────────────┘         └──────────────┘         └──────────────┘
+      │                        │                         │
+      │                        │                         │
+      ▼                        ▼                         ▼
+:validation              :enrichment              Database Write
+  queue                    queue                   + Publish Event
+
+
+LAYER 3: PERFORMANCE EVALUATION (New - Task 3)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                          │
+                          │ Session Completion Events
+                          │
+      ┌───────────────────┼────────────────────┐
+      │                   │                    │
+      ▼                   ▼                    ▼
+┌──────────────┐   ┌──────────────┐    ┌──────────────┐
+│ Performance  │   │   Metrics    │    │    Churn     │
+│ Calculator   │   │   Update     │    │  Prediction  │
+│ (Task 3.1)   │   │   Worker     │    │   (Task 3.3) │
+│   ✓ DONE     │   │ (Task 3.2)   │    │   PENDING    │
+│              │   │   ✓ DONE     │    │              │
+└──────────────┘   └──────────────┘    └──────────────┘
+      │                   │                    │
+      │                   │                    │
+      ▼                   ▼                    ▼
+Calculate 6      Real-time updates     ML predictions
+core metrics     within 60 seconds     risk scoring
+
+
+LAYER 4: STORAGE & INSIGHTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                          │
+                          ▼
+        ┌─────────────────────────────────────┐
+        │  tutor_performance_metrics table    │
+        │                                     │
+        │  - 7-day metrics (rolling)          │
+        │  - 30-day metrics (rolling)         │
+        │  - 90-day metrics (rolling)         │
+        │  - Updated within 60s of session    │
+        └─────────────────────────────────────┘
+                          │
+                          │
+                          ▼
+        ┌─────────────────────────────────────┐
+        │        API Consumption              │
+        │                                     │
+        │  GET /tutors/{id}/metrics          │
+        │  GET /tutors/{id}/performance      │
+        │  GET /dashboard/analytics          │
+        └─────────────────────────────────────┘
+
+
+KEY INTEGRATION POINTS
+━━━━━━━━━━━━━━━━━━━━━━
+1. Reuses Redis queue infrastructure (Task 2)
+2. Consumes from enrichment queue
+3. Uses PerformanceCalculator (Task 3.1)
+4. Writes to existing database schema
+5. No changes to existing workers
+6. Fully backward compatible
+
+
+PERFORMANCE CHARACTERISTICS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Latency: <60s (target) vs 15min (requirement)
+- Throughput: 40-60 events/sec (4 workers)
+- Database: 3 writes per tutor update
+- Scaling: Linear with worker count
+- Resource: ~100MB RAM per worker

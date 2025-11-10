@@ -1,0 +1,164 @@
+# ============================================================================
+# CRON CONFIGURATION EXAMPLES FOR DAILY METRICS AGGREGATION
+# ============================================================================
+#
+# To install these cron jobs:
+#   1. Edit your crontab: crontab -e
+#   2. Copy the desired configuration below
+#   3. Update the path to match your installation
+#   4. Save and exit
+#
+# To view current cron jobs: crontab -l
+# To remove all cron jobs: crontab -r
+#
+# ============================================================================
+
+# PROJECT PATH - UPDATE THIS TO YOUR INSTALLATION PATH
+# PROJECT_PATH=/Users/zeno/Projects/tutormax
+
+# ----------------------------------------------------------------------------
+# DAILY AGGREGATION JOBS
+# ----------------------------------------------------------------------------
+
+# Run daily at 2:00 AM (recommended - low traffic time)
+0 2 * * * cd /Users/zeno/Projects/tutormax && python scripts/run_daily_aggregation.py >> /var/log/tutormax/aggregation.log 2>&1
+
+# Run daily at 2:00 AM with cleanup of old metrics (90 days retention)
+0 2 * * * cd /Users/zeno/Projects/tutormax && python scripts/run_daily_aggregation.py --cleanup --retention-days 90 >> /var/log/tutormax/aggregation.log 2>&1
+
+# Run daily at 3:00 AM with verbose logging
+0 3 * * * cd /Users/zeno/Projects/tutormax && python scripts/run_daily_aggregation.py --verbose >> /var/log/tutormax/aggregation.log 2>&1
+
+# ----------------------------------------------------------------------------
+# MULTIPLE RUNS PER DAY (for high-frequency monitoring)
+# ----------------------------------------------------------------------------
+
+# Run every 6 hours
+0 */6 * * * cd /Users/zeno/Projects/tutormax && python scripts/run_daily_aggregation.py >> /var/log/tutormax/aggregation.log 2>&1
+
+# Run every 12 hours
+0 */12 * * * cd /Users/zeno/Projects/tutormax && python scripts/run_daily_aggregation.py >> /var/log/tutormax/aggregation.log 2>&1
+
+# ----------------------------------------------------------------------------
+# WEEKLY CLEANUP JOB
+# ----------------------------------------------------------------------------
+
+# Run cleanup only on Sundays at 3:00 AM
+0 3 * * 0 cd /Users/zeno/Projects/tutormax && python scripts/run_daily_aggregation.py --cleanup --retention-days 90 >> /var/log/tutormax/cleanup.log 2>&1
+
+# ----------------------------------------------------------------------------
+# TESTING AND DEVELOPMENT
+# ----------------------------------------------------------------------------
+
+# Run every 5 minutes (for testing only - DO NOT USE IN PRODUCTION)
+# */5 * * * * cd /Users/zeno/Projects/tutormax && python scripts/run_daily_aggregation.py >> /var/log/tutormax/test.log 2>&1
+
+# ----------------------------------------------------------------------------
+# SYSTEMD TIMER ALTERNATIVE (for systems with systemd)
+# ----------------------------------------------------------------------------
+
+# For more robust scheduling, consider using systemd timers instead of cron.
+# Example systemd service file: /etc/systemd/system/tutormax-aggregation.service
+#
+# [Unit]
+# Description=TutorMax Daily Metrics Aggregation
+# After=network.target postgresql.service redis.service
+#
+# [Service]
+# Type=oneshot
+# User=tutormax
+# WorkingDirectory=/Users/zeno/Projects/tutormax
+# ExecStart=/usr/bin/python3 scripts/run_daily_aggregation.py --cleanup
+# StandardOutput=journal
+# StandardError=journal
+#
+# [Install]
+# WantedBy=multi-user.target
+
+# Example systemd timer file: /etc/systemd/system/tutormax-aggregation.timer
+#
+# [Unit]
+# Description=Run TutorMax Daily Metrics Aggregation
+# Requires=tutormax-aggregation.service
+#
+# [Timer]
+# OnCalendar=daily
+# OnCalendar=*-*-* 02:00:00
+# Persistent=true
+#
+# [Install]
+# WantedBy=timers.target
+
+# Enable and start the timer:
+# sudo systemctl enable tutormax-aggregation.timer
+# sudo systemctl start tutormax-aggregation.timer
+# sudo systemctl status tutormax-aggregation.timer
+
+# ----------------------------------------------------------------------------
+# LOG ROTATION CONFIGURATION
+# ----------------------------------------------------------------------------
+
+# Create /etc/logrotate.d/tutormax:
+#
+# /var/log/tutormax/*.log {
+#     daily
+#     rotate 30
+#     compress
+#     delaycompress
+#     missingok
+#     notifempty
+#     create 0640 tutormax tutormax
+#     sharedscripts
+# }
+
+# ----------------------------------------------------------------------------
+# MONITORING AND ALERTING
+# ----------------------------------------------------------------------------
+
+# Example: Send email alert on failure (requires mail configured)
+# 0 2 * * * cd /Users/zeno/Projects/tutormax && python scripts/run_daily_aggregation.py || echo "Daily aggregation failed" | mail -s "TutorMax Aggregation Alert" admin@example.com
+
+# Example: Use healthchecks.io for monitoring
+# 0 2 * * * cd /Users/zeno/Projects/tutormax && python scripts/run_daily_aggregation.py && curl -fsS -m 10 --retry 5 -o /dev/null https://hc-ping.com/your-uuid-here
+
+# ----------------------------------------------------------------------------
+# ENVIRONMENT VARIABLES
+# ----------------------------------------------------------------------------
+
+# If your .env file is in a different location, set environment variables in cron:
+# POSTGRES_HOST=db.example.com
+# POSTGRES_PORT=5432
+# POSTGRES_USER=tutormax
+# POSTGRES_PASSWORD=your_password
+# POSTGRES_DB=tutormax
+# 0 2 * * * cd /Users/zeno/Projects/tutormax && python scripts/run_daily_aggregation.py
+
+# Or source an environment file:
+# 0 2 * * * cd /Users/zeno/Projects/tutormax && source .env && python scripts/run_daily_aggregation.py
+
+# ============================================================================
+# CRON SYNTAX QUICK REFERENCE
+# ============================================================================
+#
+# ┌───────────── minute (0 - 59)
+# │ ┌───────────── hour (0 - 23)
+# │ │ ┌───────────── day of month (1 - 31)
+# │ │ │ ┌───────────── month (1 - 12)
+# │ │ │ │ ┌───────────── day of week (0 - 6) (Sunday to Saturday)
+# │ │ │ │ │
+# * * * * * command
+#
+# Special characters:
+# * - any value
+# , - value list separator
+# - - range of values
+# / - step values
+#
+# Examples:
+# 0 2 * * * - Run at 2:00 AM every day
+# 0 */6 * * * - Run every 6 hours
+# 0 2 * * 0 - Run at 2:00 AM every Sunday
+# 0 2 1 * * - Run at 2:00 AM on the first day of every month
+# 0 2 * * 1-5 - Run at 2:00 AM Monday through Friday
+#
+# ============================================================================

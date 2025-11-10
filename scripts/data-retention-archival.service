@@ -1,0 +1,33 @@
+[Unit]
+Description=TutorMax Data Archival Service (Live Mode)
+Documentation=https://github.com/tutormax/tutormax
+After=network.target postgresql.service redis.service
+
+[Service]
+Type=oneshot
+User=tutormax
+Group=tutormax
+WorkingDirectory=/opt/tutormax
+Environment="PYTHONPATH=/opt/tutormax"
+Environment="PATH=/opt/tutormax/venv/bin:/usr/local/bin:/usr/bin:/bin"
+
+# Live mode - actually performs archival
+ExecStart=/opt/tutormax/venv/bin/python3 /opt/tutormax/scripts/run_data_retention.py --perform-actions
+
+# Logging
+StandardOutput=append:/var/log/tutormax/data-archival.log
+StandardError=append:/var/log/tutormax/data-archival-error.log
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/log/tutormax /opt/tutormax/reports
+
+# Resource limits
+MemoryMax=2G
+CPUQuota=75%
+
+[Install]
+WantedBy=multi-user.target

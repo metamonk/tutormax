@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block header_title %}We're Here to Help{% endblock %}
+{% block header_subtitle %}Let's make scheduling easier for you{% endblock %}
+
+{% block content %}
+<p>Hi {{ tutor_name }},</p>
+
+<p>We noticed that you've rescheduled <strong>{{ reschedule_count }} sessions</strong> in the past {{ days_period }} days, and we wanted to check in.</p>
+
+<div class="warning-box">
+    <p style="margin: 0;"><strong>We're here to support you!</strong> We understand that life can be unpredictable, and we want to make sure everything is going smoothly.</p>
+</div>
+
+<p>Common reasons tutors reschedule frequently:</p>
+
+<ul>
+    <li><strong>Schedule conflicts:</strong> Need help adjusting your availability?</li>
+    <li><strong>Personal circumstances:</strong> Going through a busy period?</li>
+    <li><strong>Student matching:</strong> Not the right fit with current students?</li>
+    <li><strong>Technical issues:</strong> Having platform or connection problems?</li>
+</ul>
+
+<h2>How Can We Help?</h2>
+
+<p>We have several options to support you:</p>
+
+<ul>
+    <li>Adjust your availability preferences</li>
+    <li>Temporarily reduce your session load</li>
+    <li>Connect you with different students</li>
+    <li>Provide technical support</li>
+    {% if manager_name %}
+    <li>Schedule a check-in with {{ manager_name }}</li>
+    {% endif %}
+</ul>
+
+<div class="button-container">
+    <a href="{{ support_url }}" class="button">Get Support</a>
+</div>
+
+<p>If you'd prefer to speak with someone directly, please reply to this email or reach out to {% if manager_name %}{{ manager_name }}{% else %}your manager{% endif %}.</p>
+
+<p><strong>Remember:</strong> We value you as a tutor and want to ensure you have the best experience possible. Don't hesitate to reach out!</p>
+
+<p>Best regards,<br>
+The TutorMax Team</p>
+{% endblock %}

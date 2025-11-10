@@ -1,0 +1,29 @@
+How Did Your First Session Go?
+
+Hi {{ tutor_name }},
+
+Congratulations on completing your first session with {{ student_name }} on {{ session_date }}!
+
+We'd love to hear how it went! Your feedback helps us:
+- Understand your experience with new students
+- Identify any support you might need
+- Improve our onboarding and matching process
+- Celebrate your successes!
+
+Share how it went: {{ checkin_url }}
+
+Quick Questions We'll Ask:
+- How did the session go overall?
+- Did you encounter any challenges?
+- Is there anything we can help with?
+
+This takes less than 1 minute and helps us ensure you have a great experience with all your students.
+
+Thanks for being an amazing tutor!
+
+Best regards,
+The TutorMax Team
+
+---
+This is an automated message from TutorMax. Please do not reply to this email.
+© {{ current_year }} TutorMax. All rights reserved.

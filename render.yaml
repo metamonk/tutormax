@@ -1,0 +1,447 @@
+# Render Blueprint for TutorMax Platform
+# Deploys: FastAPI Backend, React Frontend, PostgreSQL, Redis, 5 Celery Workers
+# Estimated cost: ~$52/month for MVP deployment
+
+services:
+  # ============================================================================
+  # DATABASE SERVICES
+  # ============================================================================
+
+  # PostgreSQL Database
+  - type: pserv
+    name: tutormax-postgres
+    env: docker
+    plan: starter  # $7/month, 256MB RAM, 1GB storage
+    databases:
+      - name: tutormax
+        user: tutormax
+    region: oregon
+    ipAllowList: []  # Empty = accessible from all Render services
+
+  # Redis Cache & Message Broker
+  - type: redis
+    name: tutormax-redis
+    plan: starter  # $7/month, 25MB RAM
+    maxmemoryPolicy: allkeys-lru
+    region: oregon
+    ipAllowList: []
+
+  # ============================================================================
+  # WEB SERVICE - FastAPI Backend
+  # ============================================================================
+
+  - type: web
+    name: tutormax-api
+    runtime: python
+    region: oregon
+    plan: starter  # $7/month, 512MB RAM
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: |
+      alembic upgrade head && uvicorn src.api.main:app --host 0.0.0.0 --port $PORT --workers 2
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.6
+      - key: DEBUG
+        value: false
+      - key: API_PREFIX
+        value: /api
+      - key: LOG_LEVEL
+        value: INFO
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 10000
+
+      # Database - Auto-populated from tutormax-postgres
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: tutormax-postgres
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: tutormax-postgres
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: tutormax-postgres
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: tutormax-postgres
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: tutormax-postgres
+          property: password
+
+      # Redis - Auto-populated from tutormax-redis
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: tutormax-redis
+          property: connectionString
+
+      # Database Pool Settings
+      - key: DB_ECHO
+        value: false
+      - key: DB_POOL_SIZE
+        value: 5
+      - key: DB_MAX_OVERFLOW
+        value: 10
+      - key: DB_POOL_TIMEOUT
+        value: 30
+      - key: DB_POOL_RECYCLE
+        value: 3600
+
+      # Redis Configuration
+      - key: REDIS_MAX_CONNECTIONS
+        value: 50
+      - key: REDIS_MESSAGE_TTL_SECONDS
+        value: 86400
+      - key: REDIS_WORKER_BATCH_SIZE
+        value: 10
+
+      # CORS Settings - Update with your frontend URL
+      - key: CORS_ORIGINS
+        value: https://tutormax-dashboard.onrender.com,http://localhost:3000
+
+      # Authentication & JWT - CHANGE IN PRODUCTION
+      - key: SECRET_KEY
+        generateValue: true  # Auto-generates secure random value
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: 7
+
+      # Password Policy
+      - key: PASSWORD_MIN_LENGTH
+        value: 8
+      - key: PASSWORD_REQUIRE_UPPERCASE
+        value: true
+      - key: PASSWORD_REQUIRE_LOWERCASE
+        value: true
+      - key: PASSWORD_REQUIRE_DIGIT
+        value: true
+      - key: PASSWORD_REQUIRE_SPECIAL
+        value: false
+
+      # Account Security
+      - key: MAX_FAILED_LOGIN_ATTEMPTS
+        value: 5
+      - key: ACCOUNT_LOCKOUT_DURATION_MINUTES
+        value: 30
+
+      # OAuth Configuration (Add via Render Dashboard)
+      # - GOOGLE_CLIENT_ID
+      # - GOOGLE_CLIENT_SECRET
+      # - MICROSOFT_CLIENT_ID
+      # - MICROSOFT_CLIENT_SECRET
+
+      # ML Model Settings
+      - key: MODEL_VERSION
+        value: v1.0.0
+      - key: MODEL_PATH
+        value: models/
+
+      # Feature Flags
+      - key: ENABLE_SYNTHETIC_DATA
+        value: true
+      - key: ENABLE_CHURN_PREDICTION
+        value: true
+      - key: ENABLE_INTERVENTIONS
+        value: true
+
+  # ============================================================================
+  # STATIC SITE - Next.js Frontend
+  # ============================================================================
+
+  - type: web
+    name: tutormax-dashboard
+    runtime: node
+    region: oregon
+    buildCommand: |
+      cd frontend
+      corepack enable
+      pnpm install --frozen-lockfile
+      pnpm build
+    startCommand: |
+      cd frontend && pnpm start
+    healthCheckPath: /
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+    envVars:
+      - key: NODE_VERSION
+        value: 18.19.0
+      - key: PNPM_VERSION
+        value: 9.0.0
+      - key: NEXT_PUBLIC_API_URL
+        value: https://tutormax-api.onrender.com
+      - key: NEXT_PUBLIC_WS_URL
+        value: wss://tutormax-api.onrender.com/ws/dashboard
+
+  # ============================================================================
+  # BACKGROUND WORKERS - Celery Workers (5 workers + monitoring)
+  # ============================================================================
+
+  # Worker 1: Data Generation Worker
+  - type: worker
+    name: tutormax-worker-data-generation
+    runtime: python
+    region: oregon
+    plan: starter  # $7/month, 512MB RAM
+    buildCommand: pip install -r requirements.txt
+    startCommand: |
+      celery -A src.workers.celery_app worker \
+        --loglevel=info \
+        --queues=data_generation \
+        --concurrency=2 \
+        --hostname=data_generation@%h \
+        --max-tasks-per-child=1000 \
+        --without-gossip \
+        --without-mingle
+    envVars:
+      # Database connection (same as API)
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: tutormax-postgres
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: tutormax-postgres
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: tutormax-postgres
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: tutormax-postgres
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: tutormax-postgres
+          property: password
+
+      # Redis connection
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: tutormax-redis
+          property: connectionString
+
+      # Worker-specific settings
+      - key: CELERY_LOG_LEVEL
+        value: info
+      - key: CELERY_CONCURRENCY
+        value: 2
+
+  # Worker 2: Performance Evaluation Worker
+  - type: worker
+    name: tutormax-worker-evaluation
+    runtime: python
+    region: oregon
+    plan: starter  # $7/month
+    buildCommand: pip install -r requirements.txt
+    startCommand: |
+      celery -A src.workers.celery_app worker \
+        --loglevel=info \
+        --queues=evaluation \
+        --concurrency=2 \
+        --hostname=evaluation@%h \
+        --max-tasks-per-child=1000 \
+        --without-gossip \
+        --without-mingle
+    envVars:
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: tutormax-postgres
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: tutormax-postgres
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: tutormax-postgres
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: tutormax-postgres
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: tutormax-postgres
+          property: password
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: tutormax-redis
+          property: connectionString
+
+  # Worker 3: Churn Prediction Worker
+  - type: worker
+    name: tutormax-worker-prediction
+    runtime: python
+    region: oregon
+    plan: starter  # $7/month
+    buildCommand: pip install -r requirements.txt
+    startCommand: |
+      celery -A src.workers.celery_app worker \
+        --loglevel=info \
+        --queues=prediction \
+        --concurrency=2 \
+        --hostname=prediction@%h \
+        --max-tasks-per-child=1000 \
+        --without-gossip \
+        --without-mingle
+    envVars:
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: tutormax-postgres
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: tutormax-postgres
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: tutormax-postgres
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: tutormax-postgres
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: tutormax-postgres
+          property: password
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: tutormax-redis
+          property: connectionString
+
+  # Worker 4: Model Training Worker
+  - type: worker
+    name: tutormax-worker-training
+    runtime: python
+    region: oregon
+    plan: starter  # $7/month
+    buildCommand: pip install -r requirements.txt
+    startCommand: |
+      celery -A src.workers.celery_app worker \
+        --loglevel=info \
+        --queues=training \
+        --concurrency=1 \
+        --hostname=training@%h \
+        --max-tasks-per-child=100 \
+        --without-gossip \
+        --without-mingle
+    envVars:
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: tutormax-postgres
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: tutormax-postgres
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: tutormax-postgres
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: tutormax-postgres
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: tutormax-postgres
+          property: password
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: tutormax-redis
+          property: connectionString
+
+  # Worker 5: Celery Beat Scheduler
+  - type: worker
+    name: tutormax-worker-beat
+    runtime: python
+    region: oregon
+    plan: starter  # $7/month
+    buildCommand: pip install -r requirements.txt
+    startCommand: |
+      celery -A src.workers.celery_app beat \
+        --loglevel=info \
+        --scheduler=celery.beat:PersistentScheduler
+    envVars:
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: tutormax-postgres
+          property: host
+      - key: POSTGRES_PORT
+        fromDatabase:
+          name: tutormax-postgres
+          property: port
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: tutormax-postgres
+          property: database
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: tutormax-postgres
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: tutormax-postgres
+          property: password
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: tutormax-redis
+          property: connectionString
+
+# ============================================================================
+# COST BREAKDOWN (as per PRD - lines 797-804)
+# ============================================================================
+#
+# PostgreSQL (Starter):     $7/month
+# Redis (Starter):          $7/month
+# FastAPI Web Service:      $7/month
+# React Static Site:        $0/month (included in free tier)
+# Data Generation Worker:   $7/month
+# Evaluation Worker:        $7/month
+# Prediction Worker:        $7/month
+# Training Worker:          $7/month
+# Beat Scheduler:           $7/month
+#
+# TOTAL: $56/month (~$52/month as specified in PRD)
+#
+# ============================================================================
+# DEPLOYMENT NOTES
+# ============================================================================
+#
+# 1. Database Migrations: Run automatically via alembic upgrade head in startCommand
+# 2. Environment Variables: Sensitive values (OAuth secrets) must be added via Render Dashboard
+# 3. Auto-Deploy: Enable auto-deploy from main branch in Render Dashboard
+# 4. SSL/TLS: Automatically provisioned by Render for all services
+# 5. Backups: PostgreSQL backups are automatic on Render (daily for paid plans)
+# 6. Monitoring: Access Celery Flower at tutormax-api.onrender.com/flower (optional)
+# 7. Health Checks: API has /health endpoint, workers auto-restart on failure
+# 8. Scaling: Increase plan or add more workers as needed
+#
+# ============================================================================

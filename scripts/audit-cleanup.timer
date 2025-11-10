@@ -1,0 +1,14 @@
+[Unit]
+Description=TutorMax Audit Log Cleanup Timer
+Requires=audit-cleanup.service
+
+[Timer]
+# Run daily at 2:00 AM
+OnCalendar=*-*-* 02:00:00
+# If system was down during scheduled time, run on next boot
+Persistent=true
+# Add random delay of 0-30 minutes to prevent thundering herd
+RandomizedDelaySec=30m
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,55 @@
+# Core dependencies
+faker==22.0.0
+numpy==1.26.3
+pandas==2.2.0
+python-dateutil==2.8.2
+
+# Database
+psycopg2-binary==2.9.9  # Sync PostgreSQL driver (for Alembic)
+asyncpg==0.29.0         # Async PostgreSQL driver
+sqlalchemy==2.0.25
+alembic==1.13.1         # Database migrations
+
+# API
+fastapi==0.109.0
+uvicorn[standard]==0.27.0  # Includes WebSocket support
+pydantic==2.5.3
+pydantic-settings==2.1.0
+email-validator==2.1.1  # Email validation for Pydantic
+httpx==0.27.2  # HTTP client for API testing and demos
+websockets==15.0.1  # WebSocket support
+
+# Caching and messaging
+redis==5.0.1
+celery[redis]==5.3.6  # Task queue with Redis broker (includes beat scheduler)
+flower==2.0.1  # Celery monitoring tool
+
+# Authentication & Security
+fastapi-users[sqlalchemy]==13.0.0  # Complete auth solution with OAuth, JWT, RBAC
+fastapi-users-db-sqlalchemy==6.0.1  # SQLAlchemy integration for FastAPI-Users
+httpx-oauth==0.14.1  # OAuth clients for Google, Microsoft SSO
+python-multipart==0.0.9  # Form data parsing for OAuth
+cryptography==42.0.5  # AES-256 encryption for PII and sensitive data
+reportlab==4.0.9  # PDF generation for GDPR data exports
+
+# Monitoring & Error Tracking
+sentry-sdk[fastapi]==2.17.0  # Error tracking and performance monitoring
+prometheus-client==0.20.0  # Prometheus metrics exporter
+prometheus-fastapi-instrumentator==7.0.0  # FastAPI Prometheus integration
+
+# ML (for later tasks)
+scikit-learn==1.4.0
+xgboost==2.0.3
+
+# Testing
+pytest==7.4.4
+pytest-cov==4.1.0
+pytest-asyncio==0.23.3
+
+# Load testing
+locust==2.31.8
+
+# Development
+black==24.1.1
+flake8==7.0.0
+mypy==1.8.0

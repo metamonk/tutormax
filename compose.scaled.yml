@@ -1,0 +1,354 @@
+version: '3.8'
+
+#
+# TutorMax - Horizontal Scaling Configuration
+#
+# This Docker Compose file sets up a horizontally scaled deployment:
+# - Multiple API instances (3x) with load balancing
+# - PostgreSQL primary + read replica
+# - Redis Sentinel for HA caching
+# - NGINX load balancer
+# - Celery workers for background tasks
+#
+# Usage:
+#   docker-compose -f compose.scaled.yml up -d
+#   docker-compose -f compose.scaled.yml scale api=5  # Scale to 5 API instances
+#
+
+services:
+  # ============================================================================
+  # Load Balancer - NGINX
+  # ============================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: tutormax-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api-1
+      - api-2
+      - api-3
+    networks:
+      - tutormax-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # ============================================================================
+  # API Instances (Stateless FastAPI)
+  # ============================================================================
+  api-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tutormax-api-1
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://tutormax:tutormax_dev@postgres-primary:5432/tutormax
+      - REDIS_URL=redis://redis-master:6379/0
+      - CELERY_BROKER_URL=redis://redis-master:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis-master:6379/2
+      - API_INSTANCE_ID=api-1
+      - WORKERS=4
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      redis-master:
+        condition: service_healthy
+    networks:
+      - tutormax-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  api-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tutormax-api-2
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://tutormax:tutormax_dev@postgres-primary:5432/tutormax
+      - REDIS_URL=redis://redis-master:6379/0
+      - CELERY_BROKER_URL=redis://redis-master:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis-master:6379/2
+      - API_INSTANCE_ID=api-2
+      - WORKERS=4
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      redis-master:
+        condition: service_healthy
+    networks:
+      - tutormax-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  api-3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tutormax-api-3
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://tutormax:tutormax_dev@postgres-primary:5432/tutormax
+      - REDIS_URL=redis://redis-master:6379/0
+      - CELERY_BROKER_URL=redis://redis-master:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis-master:6379/2
+      - API_INSTANCE_ID=api-3
+      - WORKERS=4
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      redis-master:
+        condition: service_healthy
+    networks:
+      - tutormax-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ============================================================================
+  # PostgreSQL - Primary (Read/Write)
+  # ============================================================================
+  postgres-primary:
+    image: postgres:15-alpine
+    container_name: tutormax-postgres-primary
+    environment:
+      POSTGRES_USER: tutormax
+      POSTGRES_PASSWORD: tutormax_dev
+      POSTGRES_DB: tutormax
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: replicator_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_primary_data:/var/lib/postgresql/data
+      - ./scripts/postgres/primary-init.sh:/docker-entrypoint-initdb.d/init.sh
+    command: |
+      postgres
+      -c wal_level=replica
+      -c max_wal_senders=3
+      -c max_replication_slots=3
+      -c hot_standby=on
+      -c shared_preload_libraries=pg_stat_statements
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tutormax"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - tutormax-network
+
+  # ============================================================================
+  # PostgreSQL - Read Replica (Read Only)
+  # ============================================================================
+  postgres-replica:
+    image: postgres:15-alpine
+    container_name: tutormax-postgres-replica
+    environment:
+      POSTGRES_USER: tutormax
+      POSTGRES_PASSWORD: tutormax_dev
+      PGUSER: tutormax
+      PGPASSWORD: tutormax_dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+      - ./scripts/postgres/replica-init.sh:/docker-entrypoint-initdb.d/init.sh
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+    command: |
+      bash -c "
+      until pg_basebackup -h postgres-primary -D /var/lib/postgresql/data -U replicator -v -P -X stream; do
+        echo 'Waiting for primary to be ready...'
+        sleep 1
+      done
+      echo 'standby_mode = on' >> /var/lib/postgresql/data/recovery.conf
+      echo 'primary_conninfo = host=postgres-primary port=5432 user=replicator password=replicator_pass' >> /var/lib/postgresql/data/recovery.conf
+      postgres
+      "
+    restart: unless-stopped
+    networks:
+      - tutormax-network
+
+  # ============================================================================
+  # Redis - Master (Primary Cache)
+  # ============================================================================
+  redis-master:
+    image: redis:7-alpine
+    container_name: tutormax-redis-master
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_master_data:/data
+    command: |
+      redis-server
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save 60 1000
+      --save 300 100
+      --save 900 10
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - tutormax-network
+
+  # ============================================================================
+  # Redis - Replica (Backup Cache)
+  # ============================================================================
+  redis-replica:
+    image: redis:7-alpine
+    container_name: tutormax-redis-replica
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_replica_data:/data
+    command: |
+      redis-server
+      --replicaof redis-master 6379
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+    depends_on:
+      redis-master:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - tutormax-network
+
+  # ============================================================================
+  # Redis Sentinel - High Availability Manager
+  # ============================================================================
+  redis-sentinel:
+    image: redis:7-alpine
+    container_name: tutormax-redis-sentinel
+    ports:
+      - "26379:26379"
+    volumes:
+      - ./redis/sentinel.conf:/etc/redis/sentinel.conf
+    command: redis-sentinel /etc/redis/sentinel.conf
+    depends_on:
+      - redis-master
+      - redis-replica
+    restart: unless-stopped
+    networks:
+      - tutormax-network
+
+  # ============================================================================
+  # Celery Workers - Background Task Processing
+  # ============================================================================
+  celery-worker-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tutormax-celery-worker-1
+    command: celery -A src.workers.celery_app worker --loglevel=info --concurrency=4 --hostname=worker1@%h
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://tutormax:tutormax_dev@postgres-primary:5432/tutormax
+      - REDIS_URL=redis://redis-master:6379/0
+      - CELERY_BROKER_URL=redis://redis-master:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis-master:6379/2
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      redis-master:
+        condition: service_healthy
+    networks:
+      - tutormax-network
+    restart: unless-stopped
+
+  celery-worker-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tutormax-celery-worker-2
+    command: celery -A src.workers.celery_app worker --loglevel=info --concurrency=4 --hostname=worker2@%h
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://tutormax:tutormax_dev@postgres-primary:5432/tutormax
+      - REDIS_URL=redis://redis-master:6379/0
+      - CELERY_BROKER_URL=redis://redis-master:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis-master:6379/2
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      redis-master:
+        condition: service_healthy
+    networks:
+      - tutormax-network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Celery Beat - Scheduled Tasks
+  # ============================================================================
+  celery-beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tutormax-celery-beat
+    command: celery -A src.workers.celery_app beat --loglevel=info
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://tutormax:tutormax_dev@postgres-primary:5432/tutormax
+      - REDIS_URL=redis://redis-master:6379/0
+      - CELERY_BROKER_URL=redis://redis-master:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis-master:6379/2
+    depends_on:
+      postgres-primary:
+        condition: service_healthy
+      redis-master:
+        condition: service_healthy
+    networks:
+      - tutormax-network
+    restart: unless-stopped
+
+  # ============================================================================
+  # Monitoring - Redis Commander (Optional)
+  # ============================================================================
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: tutormax-redis-commander
+    environment:
+      - REDIS_HOSTS=master:redis-master:6379,replica:redis-replica:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis-master
+      - redis-replica
+    networks:
+      - tutormax-network
+    restart: unless-stopped
+
+volumes:
+  postgres_primary_data:
+    driver: local
+  postgres_replica_data:
+    driver: local
+  redis_master_data:
+    driver: local
+  redis_replica_data:
+    driver: local
+
+networks:
+  tutormax-network:
+    driver: bridge

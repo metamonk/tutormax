@@ -1,0 +1,46 @@
+Manager Digest - {{ period }}
+Your Team's Performance Overview
+
+Hi {{ manager_name }},
+
+Here's your {{ period }} digest with key insights about your tutor team's performance.
+
+TEAM SUMMARY
+============
+Active Tutors: {{ summary_data.active_tutors }}
+Total Sessions: {{ summary_data.total_sessions }}
+Average Rating: {{ summary_data.avg_rating|format_number(2) }} stars
+Completion Rate: {{ summary_data.completion_rate|format_number(1) }}%
+
+{% if interventions and interventions|length > 0 %}
+PENDING INTERVENTIONS
+=====================
+You have {{ interventions|length }} interventions requiring attention:
+
+{% for intervention in interventions %}
+- {{ intervention.tutor_name }} {% if intervention.priority == 'critical' %}[CRITICAL]{% elif intervention.priority == 'high' %}[HIGH]{% endif %}
+  {{ intervention.reason }}
+  SLA: {{ intervention.sla_deadline }}
+{% endfor %}
+
+View Intervention Dashboard: {{ dashboard_url }}
+{% else %}
+Great news! No pending interventions at this time.
+{% endif %}
+
+KEY TRENDS
+==========
+- Top Performers: {{ summary_data.top_performers_count }} tutors with 4.8+ ratings
+- At Risk: {{ summary_data.at_risk_count }} tutors flagged for churn risk
+- Reschedule Rate: {{ summary_data.reschedule_rate|format_number(1) }}%
+
+View Full Dashboard: {{ dashboard_url }}
+
+Keep up the great work managing your team!
+
+Best regards,
+The TutorMax Team
+
+---
+This is an automated message from TutorMax.
+© {{ current_year }} TutorMax. All rights reserved.

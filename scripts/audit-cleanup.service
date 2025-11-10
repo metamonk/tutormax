@@ -1,0 +1,24 @@
+[Unit]
+Description=TutorMax Audit Log Cleanup Service
+After=network.target postgresql.service
+
+[Service]
+Type=oneshot
+User=tutormax
+Group=tutormax
+WorkingDirectory=/opt/tutormax
+Environment="PATH=/opt/tutormax/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/opt/tutormax/venv/bin/python scripts/cleanup_audit_logs.py --retention-days 365
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tutormax-audit-cleanup
+
+# Security hardening
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/tutormax
+
+[Install]
+WantedBy=multi-user.target

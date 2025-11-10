@@ -1,0 +1,24 @@
+# Cron job configuration for audit log cleanup
+# This file contains example cron entries for automated audit log cleanup
+
+# Run audit log cleanup daily at 2:00 AM (retain last 365 days)
+# 0 2 * * * cd /path/to/tutormax && /usr/bin/python3 scripts/cleanup_audit_logs.py --retention-days 365 >> /var/log/tutormax/audit_cleanup.log 2>&1
+
+# Run audit log cleanup weekly on Sunday at 3:00 AM (retain last 180 days)
+# 0 3 * * 0 cd /path/to/tutormax && /usr/bin/python3 scripts/cleanup_audit_logs.py --retention-days 180 >> /var/log/tutormax/audit_cleanup.log 2>&1
+
+# Run statistics report daily at 6:00 AM
+# 0 6 * * * cd /path/to/tutormax && /usr/bin/python3 scripts/cleanup_audit_logs.py --stats >> /var/log/tutormax/audit_stats.log 2>&1
+
+# Installation Instructions:
+# 1. Edit the paths above to match your installation directory
+# 2. Create log directory: sudo mkdir -p /var/log/tutormax
+# 3. Set permissions: sudo chown $USER:$USER /var/log/tutormax
+# 4. Edit crontab: crontab -e
+# 5. Add the desired cron entry (uncomment one of the lines above)
+# 6. Save and exit
+# 7. Verify: crontab -l
+
+# Systemd Timer Alternative (recommended for modern Linux):
+# Instead of cron, you can use systemd timers
+# See scripts/audit-cleanup.timer and scripts/audit-cleanup.service

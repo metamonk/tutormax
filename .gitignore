@@ -32,4 +32,37 @@ node_modules/
 .pytest_cache
 
 # Docs
-requirements.txt
+# requirements.txt (commented out - needed for deployment)
+
+# Database backups
+backups/
+*.dump
+*.dump.gz
+*.sql
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+
+# ML Models & Data
+models/
+output/
+*.pkl
+*.joblib
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Alembic
+# Keep alembic/ but ignore specific files if needed

@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block header_title %}Manager Digest - {{ period }}{% endblock %}
+{% block header_subtitle %}Your Team's Performance Overview{% endblock %}
+
+{% block content %}
+<p>Hi {{ manager_name }},</p>
+
+<p>Here's your {{ period }} digest with key insights about your tutor team's performance.</p>
+
+<h2>📊 Team Summary</h2>
+
+<div class="info-box">
+    <table width="100%" cellspacing="0" cellpadding="8" style="border-collapse: collapse;">
+        <tr>
+            <td style="font-weight: 600; color: #667eea;">Active Tutors:</td>
+            <td style="text-align: right;"><strong>{{ summary_data.active_tutors }}</strong></td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+            <td style="font-weight: 600; color: #667eea;">Total Sessions:</td>
+            <td style="text-align: right;"><strong>{{ summary_data.total_sessions }}</strong></td>
+        </tr>
+        <tr>
+            <td style="font-weight: 600; color: #667eea;">Average Rating:</td>
+            <td style="text-align: right;"><strong>{{ summary_data.avg_rating|format_number(2) }} ⭐</strong></td>
+        </tr>
+        <tr style="background-color: #f8f9fa;">
+            <td style="font-weight: 600; color: #667eea;">Completion Rate:</td>
+            <td style="text-align: right;"><strong>{{ summary_data.completion_rate|format_number(1) }}%</strong></td>
+        </tr>
+    </table>
+</div>
+
+{% if interventions and interventions|length > 0 %}
+<h2>🚨 Pending Interventions</h2>
+
+<p>You have <strong>{{ interventions|length }}</strong> interventions requiring attention:</p>
+
+{% for intervention in interventions %}
+<div class="{% if intervention.priority == 'critical' or intervention.priority == 'high' %}warning-box{% else %}info-box{% endif %}" style="margin: 16px 0;">
+    <p style="margin: 0 0 8px 0;"><strong>{{ intervention.tutor_name }}</strong>
+        {% if intervention.priority == 'critical' %}
+        <span style="background-color: #dc3545; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">CRITICAL</span>
+        {% elif intervention.priority == 'high' %}
+        <span style="background-color: #ffc107; color: #333; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600;">HIGH</span>
+        {% endif %}
+    </p>
+    <p style="margin: 0 0 4px 0; font-size: 14px;">{{ intervention.reason }}</p>
+    <p style="margin: 0; font-size: 13px; color: #6c757d;">SLA: {{ intervention.sla_deadline }}</p>
+</div>
+{% endfor %}
+
+<div class="button-container">
+    <a href="{{ dashboard_url }}" class="button">View Intervention Dashboard</a>
+</div>
+{% else %}
+<div class="info-box">
+    <p style="margin: 0;">✅ Great news! No pending interventions at this time.</p>
+</div>
+{% endif %}
+
+<h2>📈 Key Trends</h2>
+
+<ul>
+    <li><strong>Top Performers:</strong> {{ summary_data.top_performers_count }} tutors with 4.8+ ratings</li>
+    <li><strong>At Risk:</strong> {{ summary_data.at_risk_count }} tutors flagged for churn risk</li>
+    <li><strong>Reschedule Rate:</strong> {{ summary_data.reschedule_rate|format_number(1) }}%</li>
+</ul>
+
+<div class="button-container">
+    <a href="{{ dashboard_url }}" class="button">View Full Dashboard</a>
+</div>
+
+<p>Keep up the great work managing your team!</p>
+
+<p>Best regards,<br>
+The TutorMax Team</p>
+{% endblock %}

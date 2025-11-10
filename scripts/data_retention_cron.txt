@@ -1,0 +1,40 @@
+# TutorMax Data Retention Cron Jobs
+#
+# Add these to your crontab with: crontab -e
+# Make sure to update paths to match your installation
+
+# Weekly dry run scan (every Monday at 2 AM)
+# Generates report of records eligible for archival
+0 2 * * 1 cd /path/to/tutormax && /path/to/python3 scripts/run_data_retention.py --dry-run >> /var/log/tutormax/retention_scan.log 2>&1
+
+# Monthly compliance report (first day of month at 3 AM)
+# Generates detailed 90-day compliance report
+0 3 1 * * cd /path/to/tutormax && /path/to/python3 scripts/run_data_retention.py --report-only --days 90 >> /var/log/tutormax/retention_report.log 2>&1
+
+# Quarterly archival (first day of quarter at 4 AM)
+# Actually performs archival operations
+# Runs on January 1, April 1, July 1, October 1
+0 4 1 1,4,7,10 * cd /path/to/tutormax && /path/to/python3 scripts/run_data_retention.py --perform-actions >> /var/log/tutormax/retention_archival.log 2>&1
+
+# Daily scan (every night at 1 AM) - optional, for monitoring
+# Useful for keeping track of eligible records
+0 1 * * * cd /path/to/tutormax && /path/to/python3 scripts/run_data_retention.py --dry-run >> /var/log/tutormax/retention_daily_scan.log 2>&1
+
+# Setup Instructions:
+# 1. Replace /path/to/tutormax with actual installation path
+# 2. Replace /path/to/python3 with actual Python path (use: which python3)
+# 3. Create log directory: sudo mkdir -p /var/log/tutormax
+# 4. Set permissions: sudo chown $USER:$USER /var/log/tutormax
+# 5. Add to crontab: crontab -e
+# 6. Verify cron jobs: crontab -l
+#
+# Log rotation (add to /etc/logrotate.d/tutormax):
+# /var/log/tutormax/*.log {
+#     daily
+#     rotate 30
+#     compress
+#     delaycompress
+#     notifempty
+#     create 0640 tutormax tutormax
+#     sharedscripts
+# }

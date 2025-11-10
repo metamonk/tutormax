@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block header_title %}Your {{ period }} Performance Report{% endblock %}
+{% block header_subtitle %}Keep up the great work, {{ tutor_name }}!{% endblock %}
+
+{% block content %}
+<p>Hi {{ tutor_name }},</p>
+
+<p>Great job this {{ period.lower() }}! Here's a summary of your performance and achievements.</p>
+
+<h2>📊 Your Metrics</h2>
+
+<div class="info-box">
+    <table width="100%" cellspacing="0" cellpadding="8" style="border-collapse: collapse;">
+        <tr>
+            <td style="font-weight: 600; color: #667eea;">Sessions Completed:</td>
+            <td style="text-align: right;"><strong>{{ metrics.sessions_completed }}</strong></td>
+        </tr>
+        <tr style="background-color: #f0f0f0;">
+            <td style="font-weight: 600; color: #667eea;">Average Rating:</td>
+            <td style="text-align: right;"><strong>{{ metrics.avg_rating|format_number(2) }} ⭐</strong></td>
+        </tr>
+        <tr>
+            <td style="font-weight: 600; color: #667eea;">On-Time Rate:</td>
+            <td style="text-align: right;"><strong>{{ metrics.on_time_rate|format_number(1) }}%</strong></td>
+        </tr>
+        <tr style="background-color: #f0f0f0;">
+            <td style="font-weight: 600; color: #667eea;">Response Time:</td>
+            <td style="text-align: right;"><strong>{{ metrics.avg_response_time_hours|format_number(1) }}h</strong></td>
+        </tr>
+        <tr>
+            <td style="font-weight: 600; color: #667eea;">Positive Feedback:</td>
+            <td style="text-align: right;"><strong>{{ metrics.positive_feedback_rate|format_number(0) }}%</strong></td>
+        </tr>
+    </table>
+</div>
+
+{% if achievements and achievements|length > 0 %}
+<h2>🏆 Achievements</h2>
+
+<ul>
+{% for achievement in achievements %}
+    <li>{{ achievement }}</li>
+{% endfor %}
+</ul>
+{% endif %}
+
+{% if metrics.performance_tier %}
+<div class="info-box" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-left: none;">
+    <p style="margin: 0; font-size: 18px; font-weight: 600;">🌟 Current Tier: {{ metrics.performance_tier }}</p>
+    <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">{{ metrics.tier_description }}</p>
+</div>
+{% endif %}
+
+{% if areas_for_improvement and areas_for_improvement|length > 0 %}
+<h2>💡 Areas for Growth</h2>
+
+<p>Here are some opportunities to enhance your tutoring:</p>
+
+<ul>
+{% for area in areas_for_improvement %}
+    <li>{{ area }}</li>
+{% endfor %}
+</ul>
+
+<div class="info-box">
+    <p style="margin: 0;"><strong>💼 Tip:</strong> Check out our training library for resources on these topics!</p>
+</div>
+{% endif %}
+
+<h2>🎯 Keep Growing</h2>
+
+<p>Want to see more details about your performance? Visit your tutor portal for:</p>
+
+<ul>
+    <li>Detailed session ratings and feedback</li>
+    <li>Performance trends and analytics</li>
+    <li>Recommended training resources</li>
+    <li>Peer comparisons and benchmarks</li>
+</ul>
+
+<div class="button-container">
+    <a href="{{ dashboard_url }}" class="button">View Your Portal</a>
+</div>
+
+<p>Thank you for your dedication to student success!</p>
+
+<p>Best regards,<br>
+The TutorMax Team</p>
+{% endblock %}

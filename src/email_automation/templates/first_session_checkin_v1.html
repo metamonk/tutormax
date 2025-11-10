@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block header_title %}How Did It Go?{% endblock %}
+{% block header_subtitle %}Your First Session with {{ student_name }}{% endblock %}
+
+{% block content %}
+<p>Hi {{ tutor_name }},</p>
+
+<p>Congratulations on completing your first session with <strong>{{ student_name }}</strong> on {{ session_date }}! 🎉</p>
+
+<p>We'd love to hear how it went! Your feedback helps us:</p>
+
+<ul>
+    <li>Understand your experience with new students</li>
+    <li>Identify any support you might need</li>
+    <li>Improve our onboarding and matching process</li>
+    <li>Celebrate your successes!</li>
+</ul>
+
+<div class="button-container">
+    <a href="{{ checkin_url }}" class="button">Share How It Went</a>
+</div>
+
+<div class="info-box">
+    <h3 style="margin-top: 0; color: #667eea;">Quick Questions We'll Ask:</h3>
+    <ul style="margin-bottom: 0;">
+        <li>How did the session go overall?</li>
+        <li>Did you encounter any challenges?</li>
+        <li>Is there anything we can help with?</li>
+    </ul>
+</div>
+
+<p><strong>This takes less than 1 minute</strong> and helps us ensure you have a great experience with all your students.</p>
+
+<p>If the button doesn't work, use this link:</p>
+<p style="word-break: break-all; background-color: #f8f9fa; padding: 12px; border-radius: 4px; font-family: monospace; font-size: 13px;">{{ checkin_url }}</p>
+
+<p>Thanks for being an amazing tutor!</p>
+
+<p>Best regards,<br>
+The TutorMax Team</p>
+{% endblock %}

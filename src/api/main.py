@@ -24,6 +24,41 @@ from .models import (
     BatchIngestionResponse,
 )
 from .redis_service import redis_service, get_redis_service, RedisService
+from .cache_service import cache_service, get_cache_service
+from .performance_middleware import PerformanceMiddleware, RateLimitMiddleware, configure_compression
+from .metrics_exporter import setup_metrics
+from .prediction_router import router as prediction_router
+from .websocket_router import router as websocket_router
+from .tutor_portal_router import router as tutor_portal_router
+from .tutor_profile_router import router as tutor_profile_router
+from .worker_monitoring_router import router as worker_monitoring_router
+from .feedback_auth_router import router as feedback_auth_router
+from .intervention_router import router as intervention_router
+from .audit_router import router as audit_router
+from .audit_middleware import AuditLoggingMiddleware
+from .data_retention_router import router as data_retention_router
+from .uptime_router import router as uptime_router
+from .sla_dashboard_router import router as sla_dashboard_router
+from .performance_dashboard_router import router as performance_dashboard_router
+from .alerting_router import router as alerting_router
+from .analytics_router import router as analytics_router
+from .performance_router import router as performance_router
+from .gamification_router import router as gamification_router
+from .tutor_goals_router import router as tutor_goals_router
+from .training_resources_router import router as training_resources_router
+from .reports_router import router as reports_router
+from .email_tracking_router import router as email_tracking_router
+from .email_campaigns_router import router as email_campaigns_router
+from .auth import (
+    auth_router,
+    register_router,
+    reset_password_router,
+    verify_router,
+    users_router,
+    admin_router,
+    google_oauth_router,
+    microsoft_oauth_router,
+)
 
 
 # Configure logging
@@ -39,10 +74,27 @@ async def lifespan(app: FastAPI):
     """
     Application lifespan manager.
 
-    Handles startup and shutdown events for Redis connection.
+    Handles startup and shutdown events for Redis connection and Sentry.
     """
     # Startup
     logger.info("Starting TutorMax Data Ingestion API...")
+
+    # Initialize Sentry for error tracking
+    if settings.sentry_enabled:
+        try:
+            from src.api.sentry_config import init_sentry
+            init_sentry(
+                dsn=settings.sentry_dsn,
+                environment=settings.sentry_environment,
+                release=settings.app_version,
+                traces_sample_rate=settings.sentry_traces_sample_rate,
+                profiles_sample_rate=settings.sentry_profiles_sample_rate,
+            )
+            logger.info("Sentry initialized for error tracking")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Sentry: {e}")
+
+    # Connect to Redis
     try:
         await redis_service.connect()
         logger.info("Redis connection established")
@@ -50,12 +102,23 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to connect to Redis: {e}")
         logger.warning("API will start but Redis-dependent features will fail")
 
+    # Connect cache service (uses same Redis instance)
+    try:
+        await cache_service.connect()
+        logger.info("Cache service initialized")
+    except Exception as e:
+        logger.error(f"Failed to initialize cache service: {e}")
+        logger.warning("API will start but caching will be disabled")
+
     yield
 
     # Shutdown
     logger.info("Shutting down TutorMax Data Ingestion API...")
     await redis_service.disconnect()
     logger.info("Redis connection closed")
+
+    await cache_service.disconnect()
+    logger.info("Cache service disconnected")
 
 
 # Initialize FastAPI application
@@ -66,6 +129,28 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Set up Prometheus metrics
+setup_metrics(app)
+
+# Add performance middleware (should be first for accurate timing)
+app.add_middleware(
+    PerformanceMiddleware,
+    enable_timing=True,
+    enable_cache_headers=True,
+    log_slow_requests=True,
+    slow_request_threshold_ms=200
+)
+
+# Add rate limiting middleware
+if settings.rate_limit_enabled:
+    app.add_middleware(
+        RateLimitMiddleware,
+        requests_per_minute=settings.rate_limit_api_read_requests,
+        burst_size=20
+    )
+
+# Add gzip compression
+configure_compression(app)
 
 # Add CORS middleware
 app.add_middleware(
@@ -75,6 +160,79 @@ app.add_middleware(
     allow_methods=settings.cors_allow_methods,
     allow_headers=settings.cors_allow_headers,
 )
+
+# Add audit logging middleware
+# Set log_all_requests=True for verbose logging during development
+app.add_middleware(AuditLoggingMiddleware, log_all_requests=False)
+
+# Include routers
+
+# Authentication routers (FastAPI-Users)
+app.include_router(
+    auth_router,
+    prefix="/auth/jwt",
+    tags=["auth"],
+)
+app.include_router(
+    register_router,
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    reset_password_router,
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    verify_router,
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    users_router,
+    prefix="/users",
+    tags=["users"],
+)
+app.include_router(
+    admin_router.router,
+    prefix="/api",
+    tags=["admin"],
+)
+
+# OAuth/SSO routers
+app.include_router(
+    google_oauth_router,
+    prefix="/auth/google",
+    tags=["auth", "oauth"],
+)
+app.include_router(
+    microsoft_oauth_router,
+    prefix="/auth/microsoft",
+    tags=["auth", "oauth"],
+)
+
+# Application routers
+app.include_router(prediction_router)
+app.include_router(websocket_router)
+app.include_router(tutor_portal_router)
+app.include_router(tutor_profile_router)
+app.include_router(worker_monitoring_router)
+app.include_router(feedback_auth_router)
+app.include_router(intervention_router)
+app.include_router(audit_router)
+app.include_router(data_retention_router)
+app.include_router(uptime_router)
+app.include_router(sla_dashboard_router)
+app.include_router(performance_dashboard_router)
+app.include_router(alerting_router)
+app.include_router(analytics_router)
+app.include_router(performance_router)
+app.include_router(gamification_router)
+app.include_router(tutor_goals_router)
+app.include_router(training_resources_router)
+app.include_router(reports_router)
+app.include_router(email_tracking_router)
+app.include_router(email_campaigns_router)
 
 
 # Exception handlers
@@ -138,6 +296,7 @@ async def root():
             "tutors": f"{settings.api_prefix}/tutors",
             "sessions": f"{settings.api_prefix}/sessions",
             "feedback": f"{settings.api_prefix}/feedback",
+            "predictions": f"{settings.api_prefix}/predictions",
         },
     }
 

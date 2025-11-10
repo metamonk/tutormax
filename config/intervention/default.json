@@ -1,0 +1,51 @@
+{
+  "thresholds": {
+    "critical_churn_probability": 0.7,
+    "high_churn_probability": 60,
+    "medium_churn_probability": 0.3,
+    "poor_first_session_rate": 0.6,
+    "low_engagement_score": 0.6,
+    "low_rating": 4.0,
+    "new_tutor_rating_threshold": 4.2,
+    "high_performer_rating": 4.5,
+    "high_performer_engagement": 0.8,
+    "excessive_reschedule_rate": 0.2,
+    "excessive_no_show_rate": 0.15,
+    "rating_decline_moderate": 0.3,
+    "rating_decline_severe": 0.5,
+    "engagement_decline_moderate": 0.15,
+    "engagement_decline_severe": 0.2,
+    "session_volume_decline": 0.3,
+    "rating_improvement": -0.3,
+    "engagement_improvement": -0.15,
+    "min_sessions_for_evaluation": 3,
+    "new_tutor_days": 30,
+    "new_tutor_min_days": 7
+  },
+  "timing": {
+    "intervention_cooldown_days": 14,
+    "same_type_cooldown_days": 7,
+    "critical_due_days": 2,
+    "high_due_days": 5,
+    "medium_due_days": 7,
+    "low_due_days": 14
+  },
+  "enablement": {
+    "critical_churn_risk": true,
+    "severe_performance_decline": true,
+    "high_churn_risk": true,
+    "poor_first_session_performance": true,
+    "excessive_rescheduling": true,
+    "low_engagement_pattern": true,
+    "medium_churn_risk": true,
+    "declining_ratings": true,
+    "declining_session_volume": true,
+    "new_tutor_support": true,
+    "recognition_high_performer": true,
+    "recognition_improvement": true
+  },
+  "enable_automated_interventions": true,
+  "enable_human_interventions": true,
+  "max_interventions_per_tutor": 5,
+  "require_cooldown_check": true
+}

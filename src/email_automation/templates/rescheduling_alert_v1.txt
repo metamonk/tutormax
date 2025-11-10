@@ -1,0 +1,35 @@
+We're Here to Help - Rescheduling Support
+
+Hi {{ tutor_name }},
+
+We noticed that you've rescheduled {{ reschedule_count }} sessions in the past {{ days_period }} days, and we wanted to check in.
+
+We're here to support you! We understand that life can be unpredictable, and we want to make sure everything is going smoothly.
+
+Common reasons tutors reschedule frequently:
+- Schedule conflicts: Need help adjusting your availability?
+- Personal circumstances: Going through a busy period?
+- Student matching: Not the right fit with current students?
+- Technical issues: Having platform or connection problems?
+
+How Can We Help?
+
+We have several options to support you:
+- Adjust your availability preferences
+- Temporarily reduce your session load
+- Connect you with different students
+- Provide technical support
+{% if manager_name %}- Schedule a check-in with {{ manager_name }}{% endif %}
+
+Get support: {{ support_url }}
+
+If you'd prefer to speak with someone directly, please reply to this email or reach out to {% if manager_name %}{{ manager_name }}{% else %}your manager{% endif %}.
+
+Remember: We value you as a tutor and want to ensure you have the best experience possible. Don't hesitate to reach out!
+
+Best regards,
+The TutorMax Team
+
+---
+This is an automated message from TutorMax. Please do not reply to this email.
+© {{ current_year }} TutorMax. All rights reserved.

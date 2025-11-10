@@ -1,0 +1,59 @@
+Your {{ period }} Performance Report
+Keep up the great work, {{ tutor_name }}!
+
+Hi {{ tutor_name }},
+
+Great job this {{ period.lower() }}! Here's a summary of your performance and achievements.
+
+YOUR METRICS
+============
+Sessions Completed: {{ metrics.sessions_completed }}
+Average Rating: {{ metrics.avg_rating|format_number(2) }} stars
+On-Time Rate: {{ metrics.on_time_rate|format_number(1) }}%
+Response Time: {{ metrics.avg_response_time_hours|format_number(1) }}h
+Positive Feedback: {{ metrics.positive_feedback_rate|format_number(0) }}%
+
+{% if achievements and achievements|length > 0 %}
+ACHIEVEMENTS
+============
+{% for achievement in achievements %}
+- {{ achievement }}
+{% endfor %}
+{% endif %}
+
+{% if metrics.performance_tier %}
+Current Tier: {{ metrics.performance_tier }}
+{{ metrics.tier_description }}
+{% endif %}
+
+{% if areas_for_improvement and areas_for_improvement|length > 0 %}
+AREAS FOR GROWTH
+================
+Here are some opportunities to enhance your tutoring:
+
+{% for area in areas_for_improvement %}
+- {{ area }}
+{% endfor %}
+
+Tip: Check out our training library for resources on these topics!
+{% endif %}
+
+KEEP GROWING
+============
+Want to see more details about your performance? Visit your tutor portal for:
+
+- Detailed session ratings and feedback
+- Performance trends and analytics
+- Recommended training resources
+- Peer comparisons and benchmarks
+
+View Your Portal: {{ dashboard_url }}
+
+Thank you for your dedication to student success!
+
+Best regards,
+The TutorMax Team
+
+---
+This is an automated message from TutorMax.
+© {{ current_year }} TutorMax. All rights reserved.

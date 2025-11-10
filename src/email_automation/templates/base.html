@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>{% block title %}TutorMax{% endblock %}</title>
+    <style>
+        /* Reset styles */
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
+
+        /* Base styles */
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100% !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            background-color: #f4f4f4;
+        }
+
+        /* Container */
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+
+        /* Header */
+        .email-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .email-header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .email-header p {
+            margin: 10px 0 0 0;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        /* Content */
+        .email-content {
+            padding: 40px 30px;
+            color: #333333;
+            line-height: 1.6;
+        }
+
+        .email-content p {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+        }
+
+        .email-content h2 {
+            color: #667eea;
+            font-size: 22px;
+            margin: 30px 0 16px 0;
+        }
+
+        .email-content ul {
+            margin: 16px 0;
+            padding-left: 20px;
+        }
+
+        .email-content li {
+            margin-bottom: 8px;
+        }
+
+        /* Button */
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            box-shadow: 0 4px 6px rgba(102, 126, 234, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Info box */
+        .info-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .warning-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 16px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        /* Footer */
+        .email-footer {
+            background-color: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .email-footer p {
+            margin: 5px 0;
+        }
+
+        .email-footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        /* Responsive */
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                width: 100% !important;
+            }
+
+            .email-header {
+                padding: 30px 20px !important;
+            }
+
+            .email-header h1 {
+                font-size: 24px !important;
+            }
+
+            .email-content {
+                padding: 30px 20px !important;
+            }
+
+            .button {
+                display: block !important;
+                width: 100% !important;
+                box-sizing: border-box;
+            }
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .email-container {
+                background-color: #1a1a1a !important;
+            }
+
+            .email-content {
+                color: #e0e0e0 !important;
+            }
+
+            .email-footer {
+                background-color: #2a2a2a !important;
+                color: #b0b0b0 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div style="background-color: #f4f4f4; padding: 20px 0;">
+        <table role="presentation" class="email-container" width="100%" cellspacing="0" cellpadding="0" border="0">
+            <!-- Header -->
+            <tr>
+                <td class="email-header">
+                    {% block header %}
+                    <h1>{% block header_title %}TutorMax{% endblock %}</h1>
+                    <p>{% block header_subtitle %}Excellence in Education{% endblock %}</p>
+                    {% endblock %}
+                </td>
+            </tr>
+
+            <!-- Content -->
+            <tr>
+                <td class="email-content">
+                    {% block content %}
+                    <!-- Template content goes here -->
+                    {% endblock %}
+                </td>
+            </tr>
+
+            <!-- Footer -->
+            <tr>
+                <td class="email-footer">
+                    {% block footer %}
+                    <p>This is an automated message from TutorMax.</p>
+                    <p>Please do not reply to this email.</p>
+                    <p style="margin-top: 20px;">
+                        <a href="{{ unsubscribe_url|default('#') }}">Unsubscribe</a> |
+                        <a href="{{ preferences_url|default('#') }}">Email Preferences</a> |
+                        <a href="{{ support_url|default('#') }}">Support</a>
+                    </p>
+                    <p style="margin-top: 20px;">&copy; {{ current_year }} TutorMax. All rights reserved.</p>
+                    {% endblock %}
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Tracking pixel -->
+    {% if tracking_pixel_url %}
+    <img src="{{ tracking_pixel_url }}" width="1" height="1" alt="" style="display:block" />
+    {% endif %}
+</body>
+</html>

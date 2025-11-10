@@ -1,0 +1,23 @@
+Still Want to Share Your Feedback?
+
+Hi {{ student_name }},
+
+We noticed you haven't had a chance to share your feedback about your tutoring session with {{ tutor_name }} on {{ session_date }}.
+
+Your feedback is incredibly valuable to us! It only takes 2 minutes and helps us:
+- Improve our tutoring services
+- Ensure you get the best learning experience
+- Support {{ tutor_name }} in their professional development
+
+Share your feedback: {{ feedback_url }}
+
+Quick & Easy: It's been {{ hours_since_session }} hours since your session. Your feedback is still fresh and valuable!
+
+Thank you for being part of TutorMax!
+
+Best regards,
+The TutorMax Team
+
+---
+This is an automated message from TutorMax. Please do not reply to this email.
+© {{ current_year }} TutorMax. All rights reserved.

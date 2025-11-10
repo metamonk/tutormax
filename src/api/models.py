@@ -241,3 +241,109 @@ class BatchIngestionResponse(BaseModel):
             }
         }
     }
+
+
+# Prediction models
+class PredictionRequest(BaseModel):
+    """Request model for churn prediction."""
+
+    tutor_id: str = Field(..., description="Tutor ID to predict")
+    include_explanation: bool = Field(
+        default=False,
+        description="Include feature importance explanation"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "tutor_id": "tutor_00001",
+                "include_explanation": True
+            }
+        }
+    }
+
+
+class BatchPredictionRequest(BaseModel):
+    """Request model for batch churn prediction."""
+
+    tutor_ids: List[str] = Field(..., min_length=1, description="List of tutor IDs")
+    include_explanation: bool = Field(
+        default=False,
+        description="Include feature importance explanations"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "tutor_ids": ["tutor_00001", "tutor_00002", "tutor_00003"],
+                "include_explanation": False
+            }
+        }
+    }
+
+
+class PredictionResponse(BaseModel):
+    """Response model for churn prediction."""
+
+    success: bool
+    tutor_id: str
+    tutor_name: Optional[str] = None
+    tutor_status: Optional[str] = None
+    churn_probability: float = Field(..., ge=0.0, le=1.0)
+    churn_prediction: int = Field(..., ge=0, le=1, description="0=not churning, 1=churning")
+    churn_score: int = Field(..., ge=0, le=100, description="Composite churn score 0-100")
+    risk_level: str = Field(..., description="LOW, MEDIUM, HIGH, or CRITICAL")
+    prediction_date: str = Field(..., description="ISO format datetime")
+    model_version: str
+    contributing_factors: Optional[dict] = Field(
+        default=None,
+        description="Feature importance explanation (if requested)"
+    )
+    cached: bool = Field(default=False, description="Whether result was cached")
+    timestamp: str
+
+    model_config = {
+        "protected_namespaces": (),  # Allow fields starting with 'model_'
+        "json_schema_extra": {
+            "example": {
+                "success": True,
+                "tutor_id": "tutor_00001",
+                "tutor_name": "John Doe",
+                "tutor_status": "active",
+                "churn_probability": 0.75,
+                "churn_prediction": 1,
+                "churn_score": 75,
+                "risk_level": "HIGH",
+                "prediction_date": "2024-05-14T10:00:00",
+                "model_version": "v1.0.0",
+                "contributing_factors": {
+                    "sessions_7d": {"importance": 0.25, "value": 2},
+                    "activity_vs_baseline": {"importance": 0.20, "value": -0.5}
+                },
+                "cached": False,
+                "timestamp": "2024-05-14T10:00:00"
+            }
+        }
+    }
+
+
+class BatchPredictionResponse(BaseModel):
+    """Response model for batch predictions."""
+
+    success: bool
+    message: str
+    predictions: List[PredictionResponse]
+    count: int
+    timestamp: str
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "success": True,
+                "message": "Batch prediction completed",
+                "predictions": [],
+                "count": 3,
+                "timestamp": "2024-05-14T10:00:00"
+            }
+        }
+    }

@@ -1,0 +1,221 @@
+{
+  "export_metadata": {
+    "export_date": "2025-11-09T12:00:00Z",
+    "user_id": 123,
+    "data_controller": "TutorMax",
+    "gdpr_article": "Article 15 - Right of Access"
+  },
+  "account_information": {
+    "id": 123,
+    "email": "john.doe@example.com",
+    "full_name": "John Doe",
+    "roles": ["tutor"],
+    "oauth_provider": null,
+    "is_active": true,
+    "is_verified": true,
+    "is_superuser": false,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2025-11-01T08:45:00Z",
+    "last_login": "2025-11-09T09:15:00Z"
+  },
+  "tutor_data": {
+    "tutor_id": "TUTOR-001",
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "onboarding_date": "2024-01-15T00:00:00Z",
+    "status": "active",
+    "subjects": ["Mathematics", "Physics"],
+    "education_level": "Master's Degree",
+    "location": "New York, NY",
+    "baseline_sessions_per_week": 15.0,
+    "behavioral_archetype": "high_performer",
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2025-11-01T08:45:00Z"
+  },
+  "student_data": null,
+  "sessions": [
+    {
+      "session_id": "SESSION-001",
+      "student_id": "STUDENT-456",
+      "session_number": 1,
+      "scheduled_start": "2024-02-01T14:00:00Z",
+      "actual_start": "2024-02-01T14:02:00Z",
+      "duration_minutes": 60,
+      "subject": "Mathematics",
+      "session_type": "1-on-1",
+      "tutor_initiated_reschedule": false,
+      "no_show": false,
+      "late_start_minutes": 2,
+      "engagement_score": 4.5,
+      "learning_objectives_met": true,
+      "technical_issues": false
+    },
+    {
+      "session_id": "SESSION-002",
+      "student_id": "STUDENT-789",
+      "session_number": 2,
+      "scheduled_start": "2024-02-03T15:00:00Z",
+      "actual_start": "2024-02-03T15:00:00Z",
+      "duration_minutes": 60,
+      "subject": "Physics",
+      "session_type": "1-on-1",
+      "tutor_initiated_reschedule": false,
+      "no_show": false,
+      "late_start_minutes": 0,
+      "engagement_score": 4.8,
+      "learning_objectives_met": true,
+      "technical_issues": false
+    }
+  ],
+  "feedback": [
+    {
+      "feedback_id": "FB-001",
+      "session_id": "SESSION-001",
+      "tutor_id": "TUTOR-001",
+      "overall_rating": 5,
+      "is_first_session": true,
+      "subject_knowledge_rating": 5,
+      "communication_rating": 5,
+      "patience_rating": 5,
+      "engagement_rating": 4,
+      "helpfulness_rating": 5,
+      "would_recommend": true,
+      "improvement_areas": [],
+      "free_text_feedback": "Excellent tutor! Very knowledgeable and patient.",
+      "submitted_at": "2024-02-01T15:30:00Z"
+    }
+  ],
+  "performance_metrics": [
+    {
+      "metric_id": "METRIC-001",
+      "calculation_date": "2024-03-01T00:00:00Z",
+      "window": "30day",
+      "sessions_completed": 45,
+      "avg_rating": 4.8,
+      "first_session_success_rate": 0.95,
+      "reschedule_rate": 0.02,
+      "no_show_count": 0,
+      "engagement_score": 4.6,
+      "learning_objectives_met_pct": 0.96,
+      "response_time_avg_minutes": 15.3,
+      "performance_tier": "Exemplary"
+    }
+  ],
+  "predictions": [
+    {
+      "prediction_id": "PRED-001",
+      "prediction_date": "2025-11-01T00:00:00Z",
+      "churn_score": 15,
+      "risk_level": "Low",
+      "window_1day_probability": 0.01,
+      "window_7day_probability": 0.02,
+      "window_30day_probability": 0.05,
+      "window_90day_probability": 0.08,
+      "contributing_factors": {
+        "session_frequency": "stable",
+        "rating_trend": "improving",
+        "engagement": "high"
+      },
+      "model_version": "v1.2.0"
+    }
+  ],
+  "interventions": [
+    {
+      "intervention_id": "INT-001",
+      "intervention_type": "recognition",
+      "trigger_reason": "Consistently high performance",
+      "recommended_date": "2024-06-01T00:00:00Z",
+      "assigned_to": "MANAGER-001",
+      "status": "completed",
+      "due_date": "2024-06-15T00:00:00Z",
+      "completed_date": "2024-06-10T14:30:00Z",
+      "outcome": "improved",
+      "notes": "Sent recognition email and performance bonus notification"
+    }
+  ],
+  "events": [
+    {
+      "event_id": "EVENT-001",
+      "event_type": "session_completed",
+      "event_timestamp": "2024-02-01T15:00:00Z",
+      "metadata": {
+        "session_id": "SESSION-001",
+        "duration": 60,
+        "rating": 5
+      }
+    },
+    {
+      "event_id": "EVENT-002",
+      "event_type": "feedback_received",
+      "event_timestamp": "2024-02-01T15:30:00Z",
+      "metadata": {
+        "feedback_id": "FB-001",
+        "rating": 5
+      }
+    }
+  ],
+  "manager_notes": [
+    {
+      "note_id": "NOTE-001",
+      "author_name": "Jane Smith (Operations Manager)",
+      "note_text": "Excellent tutor with consistently high ratings. Good candidate for mentoring new tutors.",
+      "is_important": true,
+      "created_at": "2024-05-15T10:00:00Z"
+    }
+  ],
+  "notifications": [
+    {
+      "notification_id": "NOTIF-001",
+      "recipient_email": "john.doe@example.com",
+      "notification_type": "email",
+      "priority": "medium",
+      "status": "sent",
+      "subject": "New Session Scheduled",
+      "body": "You have a new session scheduled for Feb 5, 2024 at 2:00 PM with Student #456",
+      "sent_at": "2024-02-04T10:00:00Z",
+      "read_at": "2024-02-04T10:15:00Z",
+      "created_at": "2024-02-04T09:55:00Z"
+    },
+    {
+      "notification_id": "NOTIF-002",
+      "recipient_email": "john.doe@example.com",
+      "notification_type": "in_app",
+      "priority": "high",
+      "status": "read",
+      "subject": "Performance Recognition",
+      "body": "Congratulations! You've been recognized for outstanding performance this quarter.",
+      "sent_at": "2024-06-10T14:30:00Z",
+      "read_at": "2024-06-10T15:00:00Z",
+      "created_at": "2024-06-10T14:25:00Z"
+    }
+  ],
+  "audit_logs": [
+    {
+      "log_id": "LOG-001",
+      "action": "login",
+      "resource_type": "user",
+      "resource_id": "123",
+      "ip_address": "192.168.1.100",
+      "timestamp": "2025-11-09T09:15:00Z",
+      "success": true
+    },
+    {
+      "log_id": "LOG-002",
+      "action": "view",
+      "resource_type": "tutor",
+      "resource_id": "TUTOR-001",
+      "ip_address": "192.168.1.100",
+      "timestamp": "2025-11-09T09:16:00Z",
+      "success": true
+    },
+    {
+      "log_id": "LOG-003",
+      "action": "gdpr_data_export",
+      "resource_type": "user",
+      "resource_id": "123",
+      "ip_address": "192.168.1.100",
+      "timestamp": "2025-11-09T12:00:00Z",
+      "success": true
+    }
+  ]
+}
