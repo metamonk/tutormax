@@ -9,7 +9,7 @@
 databases:
   # PostgreSQL Database
   - name: tutormax-postgres
-    plan: starter
+    plan: free
     region: oregon
 
 # ============================================================================
