@@ -10,13 +10,8 @@ services:
   # PostgreSQL Database
   - type: pserv
     name: tutormax-postgres
-    env: docker
     plan: starter  # $7/month, 256MB RAM, 1GB storage
-    databases:
-      - name: tutormax
-        user: tutormax
     region: oregon
-    ipAllowList: []  # Empty = accessible from all Render services
 
   # Redis Cache & Message Broker
   - type: redis
@@ -45,7 +40,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.6
       - key: DEBUG
-        value: false
+        value: "false"
       - key: API_PREFIX
         value: /api
       - key: LOG_LEVEL
@@ -86,7 +81,7 @@ services:
 
       # Database Pool Settings
       - key: DB_ECHO
-        value: false
+        value: "false"
       - key: DB_POOL_SIZE
         value: 5
       - key: DB_MAX_OVERFLOW
@@ -122,13 +117,13 @@ services:
       - key: PASSWORD_MIN_LENGTH
         value: 8
       - key: PASSWORD_REQUIRE_UPPERCASE
-        value: true
+        value: "true"
       - key: PASSWORD_REQUIRE_LOWERCASE
-        value: true
+        value: "true"
       - key: PASSWORD_REQUIRE_DIGIT
-        value: true
+        value: "true"
       - key: PASSWORD_REQUIRE_SPECIAL
-        value: false
+        value: "false"
 
       # Account Security
       - key: MAX_FAILED_LOGIN_ATTEMPTS
@@ -150,11 +145,11 @@ services:
 
       # Feature Flags
       - key: ENABLE_SYNTHETIC_DATA
-        value: true
+        value: "true"
       - key: ENABLE_CHURN_PREDICTION
-        value: true
+        value: "true"
       - key: ENABLE_INTERVENTIONS
-        value: true
+        value: "true"
 
   # ============================================================================
   # STATIC SITE - Next.js Frontend
@@ -172,16 +167,6 @@ services:
     startCommand: |
       cd frontend && pnpm start
     healthCheckPath: /
-    headers:
-      - path: /*
-        name: X-Frame-Options
-        value: DENY
-      - path: /*
-        name: X-Content-Type-Options
-        value: nosniff
-      - path: /*
-        name: Referrer-Policy
-        value: strict-origin-when-cross-origin
     envVars:
       - key: NODE_VERSION
         value: 18.19.0
