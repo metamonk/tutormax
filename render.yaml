@@ -23,6 +23,7 @@ services:
     plan: starter
     maxmemoryPolicy: allkeys-lru
     region: oregon
+    ipAllowList: []
 
   # ============================================================================
   # WEB SERVICE - FastAPI Backend
