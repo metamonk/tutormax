@@ -8,10 +8,10 @@ Periodic tasks for checking and sending alerts for:
 """
 
 import logging
-import asyncio
 from datetime import datetime
 
 from src.workers.celery_app import celery_app
+from src.workers.utils.async_helper import run_async_task
 from src.api.alerting_service import get_alerting_service
 
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ def check_and_send_alerts(self):
             alerting_service = get_alerting_service()
             return await alerting_service.run_all_checks()
 
-        result = asyncio.run(_run_checks())
+        result = run_async_task(_run_checks())
 
         if result["total_alerts"] > 0:
             logger.warning(
@@ -102,7 +102,7 @@ def check_sla_violations(self):
 
             return violations
 
-        violations = asyncio.run(_check())
+        violations = run_async_task(_check())
 
         if violations:
             logger.warning(f"Found {len(violations)} SLA violations")
@@ -150,7 +150,7 @@ def check_infrastructure(self):
 
             return issues
 
-        issues = asyncio.run(_check())
+        issues = run_async_task(_check())
 
         if issues:
             critical = sum(1 for i in issues if i.severity.value == "critical")

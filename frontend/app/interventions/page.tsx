@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { InterventionQueue } from '@/components/interventions/InterventionQueue';
+import { InterventionQueueV2 } from '@/components/interventions/InterventionQueueV2';
 import { AssignInterventionDialog } from '@/components/interventions/AssignInterventionDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -25,6 +25,7 @@ import { RefreshCw, Users, Clock, CheckCircle, AlertCircle } from 'lucide-react'
 import { InterventionAPI } from '@/lib/api/interventions';
 import type { Intervention, InterventionStats, InterventionStatus } from '@/types/intervention';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 export default function InterventionsPage() {
   const [interventions, setInterventions] = React.useState<Intervention[]>([]);
@@ -160,35 +161,35 @@ export default function InterventionsPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={cn(stats.overdue > 0 && 'border-destructive/50')}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Overdue</CardTitle>
-              <AlertCircle className="h-4 w-4 text-red-500" />
+              <AlertCircle className="h-4 w-4 text-destructive" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{stats.overdue}</div>
+              <div className="text-2xl font-bold text-destructive">{stats.overdue}</div>
               <p className="text-xs text-muted-foreground">Requires immediate attention</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={cn(stats.due_this_week > 0 && 'border-warning/50')}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Due This Week</CardTitle>
-              <Clock className="h-4 w-4 text-orange-500" />
+              <Clock className="h-4 w-4 text-warning" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{stats.due_this_week}</div>
+              <div className="text-2xl font-bold text-warning-foreground">{stats.due_this_week}</div>
               <p className="text-xs text-muted-foreground">{stats.due_today} due today</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className={cn(stats.completed > 0 && 'border-success/50')}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Completed</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-500" />
+              <CheckCircle className="h-4 w-4 text-success" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.completed}</div>
+              <div className="text-2xl font-bold text-success">{stats.completed}</div>
               <p className="text-xs text-muted-foreground">Successfully resolved</p>
             </CardContent>
           </Card>
@@ -239,7 +240,7 @@ export default function InterventionsPage() {
         </TabsList>
 
         <TabsContent value={activeTab} className="mt-4">
-          <InterventionQueue
+          <InterventionQueueV2
             interventions={interventions}
             onAssign={handleAssign}
             onUpdateStatus={handleUpdateStatus}

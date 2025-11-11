@@ -1,8 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/contexts";
+import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { InstallPrompt, UpdateNotification, OfflineIndicator, MobileNav, ServiceWorkerRegistration } from "@/components/pwa";
+import { Sidebar, SidebarProvider } from "@/components/sidebar";
+import { AnimatedLayout } from "@/components/animated-layout";
+import { MainContent } from "@/components/layout/MainContent";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -56,7 +60,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/icon-192x192.png" />
         <link rel="apple-touch-icon" href="/icon-192x192.png" />
@@ -65,15 +69,31 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased pb-safe`}
       >
-        <AuthProvider>
-          <ServiceWorkerRegistration />
-          <OfflineIndicator />
-          <UpdateNotification />
-          {children}
-          <MobileNav />
-          <InstallPrompt />
-          <Toaster />
-        </AuthProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange={false}
+        >
+          <AuthProvider>
+            <SidebarProvider>
+              <ServiceWorkerRegistration />
+              <OfflineIndicator />
+              <UpdateNotification />
+              <div className="flex min-h-screen">
+                <Sidebar />
+                <MainContent>
+                  <AnimatedLayout>
+                    {children}
+                  </AnimatedLayout>
+                </MainContent>
+              </div>
+              <MobileNav />
+              <InstallPrompt />
+              <Toaster />
+            </SidebarProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

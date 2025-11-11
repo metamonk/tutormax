@@ -69,21 +69,21 @@ export function WorkflowTracker({ intervention, onUpdateStatus, loading = false 
   const getStepColor = (state: 'completed' | 'active' | 'upcoming' | 'cancelled'): string => {
     switch (state) {
       case 'completed':
-        return 'text-green-600 bg-green-100';
+        return 'text-success bg-success/10';
       case 'active':
-        return 'text-blue-600 bg-blue-100';
+        return 'text-primary bg-primary/10';
       case 'cancelled':
-        return 'text-red-600 bg-red-100';
+        return 'text-destructive bg-destructive/10';
       case 'upcoming':
       default:
-        return 'text-gray-400 bg-gray-100';
+        return 'text-muted-foreground bg-muted';
     }
   };
 
   const getConnectorColor = (fromIndex: number): string => {
-    if (isCancelled) return 'bg-red-200';
-    if (fromIndex < currentStepIndex) return 'bg-green-300';
-    return 'bg-gray-200';
+    if (isCancelled) return 'bg-destructive/20';
+    if (fromIndex < currentStepIndex) return 'bg-success/30';
+    return 'bg-border';
   };
 
   const canTransitionTo = (targetStatus: InterventionStatus): boolean => {
@@ -128,14 +128,14 @@ export function WorkflowTracker({ intervention, onUpdateStatus, loading = false 
                     {/* Step */}
                     <div className="flex flex-col items-center flex-1">
                       <div
-                        className={`flex items-center justify-center w-12 h-12 rounded-full border-2 ${
+                        className={`flex items-center justify-center w-12 h-12 rounded-full border-2 transition-all ${
                           state === 'active'
-                            ? 'border-blue-600 shadow-lg'
+                            ? 'border-primary shadow-lg'
                             : state === 'completed'
-                            ? 'border-green-600'
+                            ? 'border-success'
                             : state === 'cancelled'
-                            ? 'border-red-600'
-                            : 'border-gray-300'
+                            ? 'border-destructive'
+                            : 'border-border'
                         } ${getStepColor(state)}`}
                       >
                         {state === 'cancelled' ? (
@@ -146,14 +146,14 @@ export function WorkflowTracker({ intervention, onUpdateStatus, loading = false 
                       </div>
                       <div className="mt-2 text-center">
                         <div
-                          className={`text-sm font-medium ${
+                          className={`text-sm font-medium transition-colors ${
                             state === 'active'
-                              ? 'text-blue-600'
+                              ? 'text-primary'
                               : state === 'completed'
-                              ? 'text-green-600'
+                              ? 'text-success'
                               : state === 'cancelled'
-                              ? 'text-red-600'
-                              : 'text-gray-400'
+                              ? 'text-destructive'
+                              : 'text-muted-foreground'
                           }`}
                         >
                           {step.label}
@@ -223,15 +223,15 @@ export function WorkflowTracker({ intervention, onUpdateStatus, loading = false 
 
           {/* Completion Information */}
           {intervention.completed_date && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="bg-success/10 border border-success/20 rounded-lg p-4">
               <div className="flex items-start gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                <CheckCircle2 className="h-5 w-5 text-success mt-0.5" />
                 <div>
-                  <div className="text-sm font-medium text-green-900">
+                  <div className="text-sm font-medium text-success">
                     Completed on {new Date(intervention.completed_date).toLocaleDateString()}
                   </div>
                   {intervention.outcome && (
-                    <div className="text-sm text-green-700 mt-1">
+                    <div className="text-sm text-success/80 mt-1">
                       Outcome: {intervention.outcome.replace('_', ' ')}
                     </div>
                   )}
@@ -242,15 +242,15 @@ export function WorkflowTracker({ intervention, onUpdateStatus, loading = false 
 
           {/* Cancellation Information */}
           {isCancelled && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
               <div className="flex items-start gap-2">
-                <XCircle className="h-5 w-5 text-red-600 mt-0.5" />
+                <XCircle className="h-5 w-5 text-destructive mt-0.5" />
                 <div>
-                  <div className="text-sm font-medium text-red-900">
+                  <div className="text-sm font-medium text-destructive">
                     This intervention was cancelled
                   </div>
                   {intervention.notes && (
-                    <div className="text-sm text-red-700 mt-1">{intervention.notes}</div>
+                    <div className="text-sm text-destructive/80 mt-1">{intervention.notes}</div>
                   )}
                 </div>
               </div>

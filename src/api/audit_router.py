@@ -42,15 +42,17 @@ class AuditLogResponse(BaseModel):
     status_code: Optional[int]
     success: bool
     error_message: Optional[str]
-    metadata: Optional[Dict[str, Any]]
+    metadata: Optional[Dict[str, Any]] = Field(None, validation_alias='audit_metadata', serialization_alias='metadata')
     timestamp: datetime
 
     class Config:
         from_attributes = True
+        populate_by_name = True
 
 
 class AuditLogSearchResponse(BaseModel):
     """Paginated audit log search response."""
+    success: bool = True
     logs: List[AuditLogResponse]
     total: int
     limit: int

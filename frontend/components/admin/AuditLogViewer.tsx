@@ -21,7 +21,7 @@ import {
   TableColumnHeader,
   type ColumnDef
 } from '@/components/kibo-ui/table';
-import { Download, Search, Filter, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, Search, Filter, Calendar, ChevronLeft, ChevronRight, Activity, CheckCircle2, XCircle, TrendingUp } from 'lucide-react';
 import type { AuditLogEntry, AuditLogFilters, AuditLogResponse } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -30,13 +30,19 @@ interface AuditLogViewerProps {
   apiEndpoint?: string;
 }
 
-export function AuditLogViewer({ initialData = [], apiEndpoint = '/api/admin/audit-logs' }: AuditLogViewerProps) {
+export function AuditLogViewer({ initialData = [], apiEndpoint = '/api/audit/logs' }: AuditLogViewerProps) {
   const [logs, setLogs] = useState<AuditLogEntry[]>(initialData);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [filters, setFilters] = useState<AuditLogFilters>({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [stats, setStats] = useState({
+    totalEntries: 0,
+    successRate: 0,
+    failedActions: 0,
+    recentActivity: 0
+  });
 
   const pageSize = 100;
 
@@ -53,11 +59,37 @@ export function AuditLogViewer({ initialData = [], apiEndpoint = '/api/admin/aud
       });
 
       const response = await fetch(`${apiEndpoint}?${params}`);
+
+      if (!response.ok) {
+        // Gracefully handle missing or unauthorized endpoint
+        console.warn(`Audit logs endpoint unavailable: ${response.status} ${response.statusText}`);
+        setLogs([]);
+        setTotal(0);
+        setLoading(false);
+        return;
+      }
+
       const data: AuditLogResponse = await response.json();
 
       if (data.success) {
         setLogs(data.logs);
         setTotal(data.total);
+
+        // Calculate stats
+        const successCount = data.logs.filter((log: AuditLogEntry) => log.status === 'success').length;
+        const failedCount = data.logs.filter((log: AuditLogEntry) => log.status === 'failure').length;
+        const recentCount = data.logs.filter((log: AuditLogEntry) => {
+          const logTime = new Date(log.timestamp).getTime();
+          const dayAgo = Date.now() - (24 * 60 * 60 * 1000);
+          return logTime >= dayAgo;
+        }).length;
+
+        setStats({
+          totalEntries: data.total,
+          successRate: data.total > 0 ? (successCount / data.total) * 100 : 0,
+          failedActions: failedCount,
+          recentActivity: recentCount
+        });
       }
     } catch (error) {
       console.error('Failed to fetch audit logs:', error);
@@ -93,10 +125,20 @@ export function AuditLogViewer({ initialData = [], apiEndpoint = '/api/admin/aud
       header: ({ column }) => <TableColumnHeader column={column} title="Timestamp" />,
       cell: ({ row }) => {
         const date = new Date(row.original.timestamp);
+        const formattedDate = date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric'
+        });
+        const formattedTime = date.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+
         return (
-          <div className="text-sm">
-            <div className="font-medium">{date.toLocaleDateString()}</div>
-            <div className="text-muted-foreground">{date.toLocaleTimeString()}</div>
+          <div className="flex flex-col">
+            <span className="text-sm font-medium">{formattedDate}</span>
+            <span className="text-xs text-muted-foreground font-mono">{formattedTime}</span>
           </div>
         );
       },
@@ -105,9 +147,9 @@ export function AuditLogViewer({ initialData = [], apiEndpoint = '/api/admin/aud
       accessorKey: 'user_email',
       header: ({ column }) => <TableColumnHeader column={column} title="User" />,
       cell: ({ row }) => (
-        <div className="text-sm">
+        <span className="text-sm font-mono">
           {row.original.user_email || <span className="text-muted-foreground">System</span>}
-        </div>
+        </span>
       ),
     },
     {
@@ -115,18 +157,16 @@ export function AuditLogViewer({ initialData = [], apiEndpoint = '/api/admin/aud
       header: ({ column }) => <TableColumnHeader column={column} title="Action" />,
       cell: ({ row }) => {
         const action = row.original.action;
-        const variant =
-          action.includes('create') ? 'default' :
-          action.includes('update') ? 'secondary' :
-          action.includes('delete') ? 'destructive' :
-          'outline';
+
+        const getActionColor = () => {
+          if (action.includes('create')) return 'bg-success/10 text-success-foreground border-success/30';
+          if (action.includes('update')) return 'bg-primary/10 text-primary border-primary/30';
+          if (action.includes('delete')) return 'bg-destructive/10 text-destructive-foreground border-destructive/30';
+          return 'bg-muted text-muted-foreground';
+        };
 
         return (
-          <Badge variant={variant as any} className={cn(
-            action.includes('create') && 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100',
-            action.includes('update') && 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100',
-            action.includes('delete') && 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
-          )}>
+          <Badge variant="outline" className={getActionColor()}>
             {action}
           </Badge>
         );
@@ -160,15 +200,17 @@ export function AuditLogViewer({ initialData = [], apiEndpoint = '/api/admin/aud
       header: 'Status',
       cell: ({ row }) => {
         const status = row.original.status;
-        const variant =
-          status === 'success' ? 'default' :
-          status === 'failure' ? 'destructive' :
-          'secondary';
+        const isSuccess = status === 'success';
 
         return (
-          <Badge variant={variant as any}>
-            {status}
-          </Badge>
+          <div className="flex items-center gap-2">
+            {isSuccess ? (
+              <CheckCircle2 className="h-4 w-4 text-success" />
+            ) : (
+              <XCircle className="h-4 w-4 text-destructive" />
+            )}
+            <span className="text-sm capitalize">{status}</span>
+          </div>
         );
       },
     },
@@ -224,35 +266,85 @@ export function AuditLogViewer({ initialData = [], apiEndpoint = '/api/admin/aud
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Audit Logs</CardTitle>
-            <CardDescription>
-              {total.toLocaleString()} total entries
-            </CardDescription>
-          </div>
-          <Button onClick={exportToCSV} variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
-            Export CSV
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {/* Search and Filters */}
-        <div className="flex flex-col gap-4 mb-6">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search logs (user, action, resource, IP)..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
-              />
+    <div className="space-y-6">
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Entries</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{stats.totalEntries.toLocaleString()}</div>
+            <p className="mt-1 text-xs text-muted-foreground">All time records</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Success Rate</CardTitle>
+            <CheckCircle2 className="h-4 w-4 text-success" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{stats.successRate.toFixed(1)}%</div>
+            <p className="mt-1 text-xs text-muted-foreground">Successful operations</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Failed Actions</CardTitle>
+            <XCircle className="h-4 w-4 text-destructive" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{stats.failedActions}</div>
+            <p className="mt-1 text-xs text-muted-foreground">Requires attention</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Recent Activity</CardTitle>
+            <TrendingUp className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{stats.recentActivity}</div>
+            <p className="mt-1 text-xs text-muted-foreground">Last 24 hours</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Content Card */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Audit Logs</CardTitle>
+              <CardDescription>
+                {total.toLocaleString()} total entries
+              </CardDescription>
             </div>
+            <Button onClick={exportToCSV} variant="outline" size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              Export CSV
+            </Button>
           </div>
+        </CardHeader>
+        <CardContent>
+        {/* Search and Filters */}
+        <div className="space-y-4 mb-6">
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search audit logs..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+
+          {/* Filter Inputs */}
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-2">
             <Input
@@ -368,5 +460,6 @@ export function AuditLogViewer({ initialData = [], apiEndpoint = '/api/admin/aud
         )}
       </CardContent>
     </Card>
+    </div>
   );
 }

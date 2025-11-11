@@ -126,15 +126,24 @@ export function StudentFeedbackForm({
 
   if (submitSuccess) {
     return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardContent className="pt-6">
-          <div className="text-center space-y-4">
-            <CheckCircle2 className="w-16 h-16 text-green-600 mx-auto" />
-            <h2 className="text-2xl font-bold text-green-600">Thank You!</h2>
-            <p className="text-gray-600">
-              Your feedback has been submitted successfully. We appreciate you taking the time to
-              help us improve.
-            </p>
+      <Card className="w-full max-w-2xl mx-auto border-2 shadow-lg">
+        <CardContent className="pt-12 pb-12">
+          <div className="text-center space-y-6">
+            <div className="inline-flex items-center justify-center">
+              <div className="relative">
+                <div className="absolute inset-0 blur-2xl bg-success/30 animate-pulse"></div>
+                <div className="relative rounded-full bg-success/10 p-6">
+                  <CheckCircle2 className="w-20 h-20 text-success" />
+                </div>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <h2 className="text-3xl font-bold tracking-tight">Thank You!</h2>
+              <p className="text-lg text-muted-foreground max-w-md mx-auto">
+                Your feedback has been submitted successfully. We appreciate you taking the time to
+                help us improve our tutoring services.
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -142,23 +151,38 @@ export function StudentFeedbackForm({
   }
 
   return (
-    <Card className="w-full max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>Session Feedback</CardTitle>
-        <CardDescription>
-          {sessionInfo.tutor_name && `Tutor: ${sessionInfo.tutor_name}`}
-          {sessionInfo.session_date && ` • ${sessionInfo.session_date}`}
-          {sessionInfo.subject && ` • ${sessionInfo.subject}`}
+    <Card className="w-full max-w-2xl mx-auto border-2 shadow-lg">
+      <CardHeader className="space-y-3 pb-8">
+        <CardTitle className="text-2xl">Session Feedback</CardTitle>
+        <CardDescription className="text-base space-y-1">
+          {sessionInfo.tutor_name && (
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Tutor:</span>
+              <span>{sessionInfo.tutor_name}</span>
+            </div>
+          )}
+          {sessionInfo.session_date && (
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Date:</span>
+              <span>{sessionInfo.session_date}</span>
+            </div>
+          )}
+          {sessionInfo.subject && (
+            <div className="flex items-center gap-2">
+              <span className="font-medium">Subject:</span>
+              <span>{sessionInfo.subject}</span>
+            </div>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
         {isUnder13 && (
-          <Alert className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
+          <Alert className="mb-8 border-2 bg-muted/50">
+            <AlertCircle className="h-5 w-5" />
+            <AlertDescription className="text-base">
               This form is for students under 13. Parent or guardian consent is required to submit
               feedback. Please review our{" "}
-              <a href="/privacy" className="underline font-medium">
+              <a href="/privacy" className="text-primary hover:underline font-semibold">
                 Privacy Policy
               </a>{" "}
               before submitting.
@@ -167,14 +191,14 @@ export function StudentFeedbackForm({
         )}
 
         {submitError && (
-          <Alert variant="destructive" className="mb-6">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>{submitError}</AlertDescription>
+          <Alert variant="destructive" className="mb-8 border-2">
+            <AlertCircle className="h-5 w-5" />
+            <AlertDescription className="text-base font-medium">{submitError}</AlertDescription>
           </Alert>
         )}
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             {/* Session Rating */}
             <FormField
               control={form.control}
@@ -447,16 +471,38 @@ export function StudentFeedbackForm({
             )}
 
             {/* Submit Button */}
-            <Button type="submit" className="w-full" disabled={isSubmitting} size="lg">
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Submitting...
-                </>
-              ) : (
-                "Submit Feedback"
-              )}
-            </Button>
+            <div className="pt-4">
+              <Button
+                type="submit"
+                className="w-full text-lg h-14 shadow-lg hover:shadow-xl transition-shadow"
+                disabled={isSubmitting}
+                size="lg"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Submitting Your Feedback...
+                  </>
+                ) : (
+                  <>
+                    Submit Feedback
+                    <svg
+                      className="ml-2 h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M14 5l7 7m0 0l-7 7m7-7H3"
+                      />
+                    </svg>
+                  </>
+                )}
+              </Button>
+            </div>
           </form>
         </Form>
       </CardContent>

@@ -58,23 +58,23 @@ const columns = [
 const categoryConfig = {
   pedagogy: {
     label: 'Pedagogy',
-    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100'
+    color: 'bg-blue-600 dark:bg-blue-500 text-white'
   },
   technology: {
     label: 'Technology',
-    color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100'
+    color: 'bg-purple-600 dark:bg-purple-500 text-white'
   },
   communication: {
     label: 'Communication',
-    color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100'
+    color: 'bg-emerald-600 dark:bg-emerald-500 text-white'
   },
   compliance: {
     label: 'Compliance',
-    color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100'
+    color: 'bg-red-600 dark:bg-red-500 text-white'
   },
   subject_matter: {
     label: 'Subject Matter',
-    color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
+    color: 'bg-amber-600 dark:bg-amber-500 text-white'
   }
 };
 
@@ -241,13 +241,13 @@ export function RecommendedTraining({
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100';
+        return 'bg-red-600 dark:bg-red-500 text-white';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100';
+        return 'bg-amber-600 dark:bg-amber-500 text-white';
       case 'low':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100';
+        return 'bg-emerald-600 dark:bg-emerald-500 text-white';
       default:
-        return '';
+        return 'bg-slate-500 dark:bg-slate-600 text-white';
     }
   };
 
@@ -381,41 +381,33 @@ export function RecommendedTraining({
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Modules</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{modules.length}</div>
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-muted-foreground">Total Modules</p>
+            <p className="mt-2 text-3xl font-bold">{modules.length}</p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>To Do</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-muted-foreground">To Do</p>
+            <p className="mt-2 text-3xl font-bold text-slate-600 dark:text-slate-400">
               {modules.filter(m => m.status === 'to_do').length}
-            </div>
+            </p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>In Progress</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-blue-600">
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-muted-foreground">In Progress</p>
+            <p className="mt-2 text-3xl font-bold text-blue-600 dark:text-blue-400">
               {modules.filter(m => m.status === 'in_progress').length}
-            </div>
+            </p>
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Completed</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-600">
+          <CardContent className="p-6">
+            <p className="text-sm font-medium text-muted-foreground">Completed</p>
+            <p className="mt-2 text-3xl font-bold text-emerald-600 dark:text-emerald-400">
               {modules.filter(m => m.status === 'completed').length}
-            </div>
+            </p>
           </CardContent>
         </Card>
       </div>

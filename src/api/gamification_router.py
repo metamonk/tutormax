@@ -5,7 +5,7 @@ Provides badge achievements, progress tracking, and peer comparison features.
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 from enum import Enum
 
@@ -170,7 +170,7 @@ async def get_tutor_badges(
         total_sessions = total_sessions_result.scalar() or 0
 
         # Get consecutive teaching days (simplified - count unique teaching days in last 30 days)
-        thirty_days_ago = datetime.now() - timedelta(days=30)
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
         teaching_days_result = await db.execute(
             select(func.count(func.distinct(func.date(SessionModel.scheduled_start))))
             .where(
@@ -326,8 +326,9 @@ async def get_tutor_badges(
 
         # Calculate totals
         earned_badges = [b for b in badges if b.earned]
+        now_tz = datetime.now(timezone.utc)
         recent_achievements = sorted(
-            [b for b in earned_badges if b.earned_date and b.earned_date >= datetime.now() - timedelta(days=30)],
+            [b for b in earned_badges if b.earned_date and b.earned_date.replace(tzinfo=timezone.utc) >= now_tz - timedelta(days=30)],
             key=lambda x: x.earned_date,
             reverse=True
         )[:5]

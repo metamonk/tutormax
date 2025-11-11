@@ -136,7 +136,7 @@ export function CriticalAlerts({ alerts, onResolve }: CriticalAlertsProps) {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => router.push(`/tutor/profile?tutor=${alert.tutor_id}`)}
+                      onClick={() => router.push(`/tutor/${alert.tutor_id}`)}
                     >
                       View Tutor Profile
                     </Button>

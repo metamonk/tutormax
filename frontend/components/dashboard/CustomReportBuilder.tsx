@@ -69,7 +69,7 @@ export function CustomReportBuilder() {
     setIsGenerating(true);
 
     try {
-      const response = await fetch('/api/v1/reports/custom-report', {
+      const response = await fetch('/api/reports/custom-report', {
         method: 'POST',
         credentials: 'include',
         headers: {

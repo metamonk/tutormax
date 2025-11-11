@@ -8,9 +8,31 @@ dev-debug.log
 
 # Dependency directories
 node_modules/
+venv/
+env/
+ENV/
+.venv/
 
-# Environment variables
+# Environment variables - CRITICAL
 .env
+.env.local
+.env.*.local
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
+# MCP Configuration with API keys - CRITICAL
+.mcp.json
+
+# Credentials and secrets - CRITICAL
+credentials.json
+secrets.json
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+service-account*.json
 
 # Editor directories and files
 .idea
@@ -23,46 +45,90 @@ node_modules/
 
 # OS specific
 .DS_Store
+Thumbs.db
 
+# Task Master - Keep for team collaboration (removed from ignore)
+# .taskmaster/tasks/tasks.json should be committed
+# .taskmaster/docs/ should be committed
+# Only ignore local state if needed:
+.taskmaster/reports/
+.taskmaster/.session
 
-# env
-.mcp.json
-.taskmaster
-.claude
-.pytest_cache
+# Claude Code - Keep settings for team (removed from ignore)
+# .claude/settings.json should be committed
+# .claude/commands/ should be committed
 
-# Docs
-# requirements.txt (commented out - needed for deployment)
-
-# Database backups
-backups/
-*.dump
-*.dump.gz
-*.sql
-
-# Python cache
+# Python
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .Python
 *.so
+*.egg-info/
+dist/
+build/
+*.egg
 
 # Testing
 .coverage
 htmlcov/
 .pytest_cache/
 .tox/
+coverage.xml
+*.cover
+
+# Database
+backups/
+*.dump
+*.dump.gz
+*.sql
+*.db
+*.sqlite
+*.sqlite3
 
 # ML Models & Data
 models/
 output/
 *.pkl
 *.joblib
+data/raw/
+data/processed/
 
 # Celery
 celerybeat-schedule
+celerybeat-schedule.db
 celerybeat.pid
 
+# Redis
+dump.rdb
+*.rdb
+
+# Next.js / Frontend
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/dist/
+frontend/.turbo
+frontend/public/sw.js.map
+frontend/public/workbox-*.js
+frontend/public/workbox-*.js.map
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Local development
+.local
+*.local
+
 # Alembic
-# Keep alembic/ but ignore specific files if needed
+# Keep alembic/ directory structure
+
+# Monitoring & Profiling
+*.prof
+*.lprof
+.profiling/

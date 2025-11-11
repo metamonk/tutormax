@@ -1,0 +1,73 @@
+{
+  "total_changes": 6,
+  "successful_changes": 0,
+  "last_optimization": "2025-11-08T11:40:29.503760",
+  "changes": [
+    {
+      "timestamp": "2025-11-08T11:40:23.757387",
+      "intervention_type": "automated_coaching",
+      "parameter": "churn_score",
+      "old_value": 70,
+      "new_value": 60,
+      "reason": "Treatment group showed 59.0% improvement rate. Expanding trigger criteria could help more tutors.",
+      "experiment_id": "exp_21572382",
+      "approved_by": null,
+      "impact": null
+    },
+    {
+      "timestamp": "2025-11-08T11:40:23.757401",
+      "intervention_type": "automated_coaching",
+      "parameter": "performance_tier",
+      "old_value": "At Risk",
+      "new_value": "Developing",
+      "reason": "Treatment group showed 59.0% improvement rate. Expanding trigger criteria could help more tutors.",
+      "experiment_id": "exp_21572382",
+      "approved_by": null,
+      "impact": null
+    },
+    {
+      "timestamp": "2025-11-08T11:40:23.757412",
+      "intervention_type": "automated_coaching",
+      "parameter": "churn_score",
+      "old_value": 70,
+      "new_value": 60,
+      "reason": "High improvement rate (65.5%). Expanding criteria to help more tutors.",
+      "experiment_id": "exp_21572382",
+      "approved_by": null,
+      "impact": null
+    },
+    {
+      "timestamp": "2025-11-08T11:40:29.503737",
+      "intervention_type": "automated_coaching",
+      "parameter": "churn_score",
+      "old_value": 70,
+      "new_value": 60,
+      "reason": "Treatment group showed 59.0% improvement rate. Expanding trigger criteria could help more tutors.",
+      "experiment_id": "exp_6ee05581",
+      "approved_by": null,
+      "impact": null
+    },
+    {
+      "timestamp": "2025-11-08T11:40:29.503748",
+      "intervention_type": "automated_coaching",
+      "parameter": "performance_tier",
+      "old_value": "At Risk",
+      "new_value": "Developing",
+      "reason": "Treatment group showed 59.0% improvement rate. Expanding trigger criteria could help more tutors.",
+      "experiment_id": "exp_6ee05581",
+      "approved_by": null,
+      "impact": null
+    },
+    {
+      "timestamp": "2025-11-08T11:40:29.503759",
+      "intervention_type": "automated_coaching",
+      "parameter": "churn_score",
+      "old_value": 70,
+      "new_value": 60,
+      "reason": "High improvement rate (65.5%). Expanding criteria to help more tutors.",
+      "experiment_id": "exp_6ee05581",
+      "approved_by": null,
+      "impact": null
+    }
+  ]
+}

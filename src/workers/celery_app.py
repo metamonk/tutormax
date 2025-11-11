@@ -94,6 +94,14 @@ celery_app.conf.update(
 
     # Beat schedule (periodic tasks)
     beat_schedule={
+        # Data Generation - hourly to generate ~3000 sessions/day
+        "generate-data-hourly": {
+            "task": "data_generator.generate_data_continuous",
+            "schedule": crontab(minute=0),  # Every hour
+            "kwargs": {"batch_size": 125},  # ~3000 per day (125 * 24 = 3000)
+            "options": {"queue": "data_generation"},
+        },
+
         # Performance Evaluator - every 15 minutes
         "evaluate-performance-every-15-min": {
             "task": "src.workers.tasks.performance_evaluator.evaluate_tutor_performance",
@@ -116,6 +124,7 @@ celery_app.conf.update(
         },
 
         # Uptime Monitoring - every minute for >99.5% SLA tracking
+        # FIXED: Using async_helper to avoid SIGSEGV on macOS
         "record-health-checks-every-minute": {
             "task": "src.workers.tasks.uptime_monitor.record_health_checks",
             "schedule": crontab(minute="*"),  # Every minute
@@ -123,6 +132,7 @@ celery_app.conf.update(
         },
 
         # Uptime Report - hourly
+        # FIXED: Using async_helper to avoid SIGSEGV on macOS
         "generate-uptime-report-hourly": {
             "task": "src.workers.tasks.uptime_monitor.generate_uptime_report",
             "schedule": crontab(minute=0),  # Every hour
@@ -131,6 +141,7 @@ celery_app.conf.update(
         },
 
         # SLA Compliance Check - every hour
+        # FIXED: Using async_helper to avoid SIGSEGV on macOS
         "check-sla-compliance-hourly": {
             "task": "src.workers.tasks.uptime_monitor.check_sla_compliance",
             "schedule": crontab(minute=30),  # Every hour at :30
@@ -139,6 +150,7 @@ celery_app.conf.update(
         },
 
         # Cleanup old health checks - daily at 3am
+        # FIXED: Using async_helper to avoid SIGSEGV on macOS
         "cleanup-old-health-checks-daily": {
             "task": "src.workers.tasks.uptime_monitor.cleanup_old_health_checks",
             "schedule": crontab(hour=3, minute=0),
@@ -147,6 +159,7 @@ celery_app.conf.update(
         },
 
         # Alerting - comprehensive check every 5 minutes
+        # FIXED: Using async_helper to avoid SIGSEGV on macOS
         "check-and-send-alerts-every-5-min": {
             "task": "src.workers.tasks.alerting.check_and_send_alerts",
             "schedule": crontab(minute="*/5"),  # Every 5 minutes
@@ -154,6 +167,7 @@ celery_app.conf.update(
         },
 
         # SLA violation check - every 5 minutes
+        # FIXED: Using async_helper to avoid SIGSEGV on macOS
         "check-sla-violations-every-5-min": {
             "task": "src.workers.tasks.alerting.check_sla_violations",
             "schedule": crontab(minute="*/5"),  # Every 5 minutes
@@ -161,6 +175,7 @@ celery_app.conf.update(
         },
 
         # Infrastructure check - every 2 minutes for faster failure detection
+        # FIXED: Using async_helper to avoid SIGSEGV on macOS
         "check-infrastructure-every-2-min": {
             "task": "src.workers.tasks.alerting.check_infrastructure",
             "schedule": crontab(minute="*/2"),  # Every 2 minutes

@@ -61,9 +61,10 @@ async def get_tutor_metrics(
             )
 
         # Check if tutor exists
-        tutor = db.execute(
+        result = await db.execute(
             select(Tutor).where(Tutor.tutor_id == tutor_id)
-        ).scalar_one_or_none()
+        )
+        tutor = result.scalar_one_or_none()
 
         if not tutor:
             raise HTTPException(
@@ -72,7 +73,7 @@ async def get_tutor_metrics(
             )
 
         # Get latest metrics for the specified window
-        metric = db.execute(
+        result = await db.execute(
             select(TutorPerformanceMetric)
             .where(
                 TutorPerformanceMetric.tutor_id == tutor_id,
@@ -80,7 +81,8 @@ async def get_tutor_metrics(
             )
             .order_by(desc(TutorPerformanceMetric.calculation_date))
             .limit(1)
-        ).scalar_one_or_none()
+        )
+        metric = result.scalar_one_or_none()
 
         if not metric:
             # Return default structure if no metrics calculated yet
@@ -104,11 +106,11 @@ async def get_tutor_metrics(
                 "performance_tier": metric.performance_tier.value if metric.performance_tier else None,
                 "sessions_completed": metric.sessions_completed,
                 "avg_rating": round(metric.avg_rating, 2) if metric.avg_rating else None,
-                "first_session_success_rate": round(metric.first_session_success_rate * 100, 1) if metric.first_session_success_rate else None,
-                "reschedule_rate": round(metric.reschedule_rate * 100, 1) if metric.reschedule_rate else None,
+                "first_session_success_rate": round(metric.first_session_success_rate, 1) if metric.first_session_success_rate else None,
+                "reschedule_rate": round(metric.reschedule_rate, 1) if metric.reschedule_rate else None,
                 "no_show_count": metric.no_show_count,
                 "engagement_score": round(metric.engagement_score, 2) if metric.engagement_score else None,
-                "learning_objectives_met_pct": round(metric.learning_objectives_met_pct * 100, 1) if metric.learning_objectives_met_pct else None,
+                "learning_objectives_met_pct": round(metric.learning_objectives_met_pct, 1) if metric.learning_objectives_met_pct else None,
                 "response_time_avg_minutes": round(metric.response_time_avg_minutes, 1) if metric.response_time_avg_minutes else None,
             },
             "timestamp": datetime.now().isoformat()
@@ -148,9 +150,10 @@ async def get_tutor_sessions(
     """
     try:
         # Check if tutor exists
-        tutor = db.execute(
+        result = await db.execute(
             select(Tutor).where(Tutor.tutor_id == tutor_id)
-        ).scalar_one_or_none()
+        )
+        tutor = result.scalar_one_or_none()
 
         if not tutor:
             raise HTTPException(
@@ -168,12 +171,14 @@ async def get_tutor_sessions(
             .offset(offset)
         )
 
-        results = db.execute(sessions_query).all()
+        result = await db.execute(sessions_query)
+        results = result.all()
 
         # Get total count for pagination
-        total_count = db.execute(
+        count_result = await db.execute(
             select(func.count()).select_from(SessionModel).where(SessionModel.tutor_id == tutor_id)
-        ).scalar()
+        )
+        total_count = count_result.scalar()
 
         sessions = []
         for session, feedback in results:
@@ -245,9 +250,10 @@ async def get_tutor_recommendations(
     """
     try:
         # Check if tutor exists
-        tutor = db.execute(
+        result = await db.execute(
             select(Tutor).where(Tutor.tutor_id == tutor_id)
-        ).scalar_one_or_none()
+        )
+        tutor = result.scalar_one_or_none()
 
         if not tutor:
             raise HTTPException(
@@ -256,15 +262,16 @@ async def get_tutor_recommendations(
             )
 
         # Get latest performance metrics
-        metric = db.execute(
+        metric_result = await db.execute(
             select(TutorPerformanceMetric)
             .where(TutorPerformanceMetric.tutor_id == tutor_id)
             .order_by(desc(TutorPerformanceMetric.calculation_date))
             .limit(1)
-        ).scalar_one_or_none()
+        )
+        metric = metric_result.scalar_one_or_none()
 
         # Get pending training interventions
-        interventions = db.execute(
+        interventions_result = await db.execute(
             select(Intervention)
             .where(
                 Intervention.tutor_id == tutor_id,
@@ -272,7 +279,8 @@ async def get_tutor_recommendations(
                 Intervention.status.in_([InterventionStatus.PENDING, InterventionStatus.IN_PROGRESS])
             )
             .order_by(desc(Intervention.created_at))
-        ).scalars().all()
+        )
+        interventions = interventions_result.scalars().all()
 
         # Build recommendations based on metrics
         recommendations = []
@@ -389,9 +397,10 @@ async def get_tutor_profile(
         Tutor profile information
     """
     try:
-        tutor = db.execute(
+        result = await db.execute(
             select(Tutor).where(Tutor.tutor_id == tutor_id)
-        ).scalar_one_or_none()
+        )
+        tutor = result.scalar_one_or_none()
 
         if not tutor:
             raise HTTPException(

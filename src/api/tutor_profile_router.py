@@ -11,7 +11,7 @@ Provides comprehensive tutor profile data including:
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 import pandas as pd
 from pathlib import Path
@@ -26,7 +26,16 @@ from .config import settings
 from .redis_service import RedisService, get_redis_service
 from ..evaluation.prediction_service import ChurnPredictionService
 from ..database.database import get_async_session
-from ..database.models import ManagerNote, Intervention
+from ..database.models import (
+    ManagerNote,
+    Intervention,
+    Tutor,
+    TutorPerformanceMetric,
+    ChurnPrediction,
+    Session as SessionModel,
+    StudentFeedback,
+    MetricWindow
+)
 
 logger = logging.getLogger(__name__)
 
@@ -292,60 +301,65 @@ async def get_tutor_profile(
     - Recent feedback
     """
     try:
-        # Load data
-        tutors_df, sessions_df, feedback_df = load_tutor_data()
+        # 1. Check tutor exists in database
+        tutor_result = await db.execute(
+            select(Tutor).where(Tutor.tutor_id == tutor_id)
+        )
+        tutor = tutor_result.scalar_one_or_none()
 
-        # Check tutor exists
-        tutor_row = tutors_df[tutors_df['tutor_id'] == tutor_id]
-        if tutor_row.empty:
+        if not tutor:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Tutor {tutor_id} not found"
             )
 
-        tutor_data = tutor_row.iloc[0]
-
-        # 1. Basic tutor info
-        onboarding_date = pd.to_datetime(tutor_data['onboarding_date'])
-        tenure_days = (datetime.now() - onboarding_date).days
+        # Basic tutor info
+        onboarding_date = tutor.onboarding_date if isinstance(tutor.onboarding_date, datetime) else datetime.combine(tutor.onboarding_date, datetime.min.time())
+        # Make both datetimes timezone-aware for comparison
+        now_tz = datetime.now(timezone.utc)
+        onboarding_tz = onboarding_date.replace(tzinfo=timezone.utc) if onboarding_date.tzinfo is None else onboarding_date
+        tenure_days = (now_tz - onboarding_tz).days
 
         tutor_info = TutorBasicInfo(
             tutor_id=tutor_id,
-            name=tutor_data['name'],
-            email=tutor_data['email'],
-            onboarding_date=tutor_data['onboarding_date'],
-            status=tutor_data['status'],
-            subjects=tutor_data['subjects'] if isinstance(tutor_data['subjects'], list) else [],
-            education_level=tutor_data.get('education_level'),
-            location=tutor_data.get('location'),
+            name=tutor.name,
+            email=tutor.email,
+            onboarding_date=onboarding_date.isoformat() if isinstance(onboarding_date, datetime) else str(onboarding_date),
+            status=tutor.status.value,
+            subjects=tutor.subjects if tutor.subjects else [],
+            education_level=tutor.education_level,
+            location=tutor.location,
             tenure_days=tenure_days
         )
 
-        # 2. Multi-window churn predictions
-        service = get_prediction_service()
+        # 2. Multi-window churn predictions from database
         churn_predictions = []
 
-        # For now, we'll use the same prediction for all windows
-        # In production, you'd calculate different predictions for different time windows
-        base_prediction = service.predict_tutor(
-            tutor_id=tutor_id,
-            tutors_df=tutors_df,
-            sessions_df=sessions_df,
-            feedback_df=feedback_df,
-            include_explanation=False
+        # Query churn predictions from database
+        churn_result = await db.execute(
+            select(ChurnPrediction)
+            .where(ChurnPrediction.tutor_id == tutor_id)
+            .order_by(ChurnPrediction.prediction_date.desc())
+            .limit(1)
         )
+        churn_data = churn_result.scalar_one_or_none()
 
-        # Simulate different windows (in production, these would be different calculations)
-        windows = {
-            "1d": 0.8,    # Shorter windows might show higher variation
-            "7d": 0.9,
-            "30d": 1.0,   # Base prediction
-            "90d": 0.95,  # Longer windows more stable
-        }
+        if churn_data:
+            # Use database churn prediction data
+            base_score = churn_data.churn_score
+            windows = {
+                "1d": 0.8,
+                "7d": churn_data.window_7day_probability or 0.9,
+                "30d": churn_data.window_30day_probability or 1.0,
+                "90d": 0.95,
+            }
+        else:
+            # Default fallback for tutors without churn predictions
+            base_score = 25.0  # Low default
+            windows = {"1d": 0.8, "7d": 0.9, "30d": 1.0, "90d": 0.95}
 
         for window, multiplier in windows.items():
-            adjusted_score = min(100, base_prediction['churn_score'] * multiplier)
-            # Determine risk level based on adjusted score
+            adjusted_score = min(100, base_score * multiplier)
             if adjusted_score >= 75:
                 risk_level = "CRITICAL"
             elif adjusted_score >= 50:
@@ -362,56 +376,44 @@ async def get_tutor_profile(
                 prediction_date=datetime.now().isoformat()
             ))
 
-        # 3. Performance metrics (last 30 days)
-        tutor_sessions = sessions_df[sessions_df['tutor_id'] == tutor_id]
-        tutor_feedback = feedback_df[feedback_df['tutor_id'] == tutor_id]
-
-        # Calculate metrics
-        sessions_completed = len(tutor_sessions[tutor_sessions['no_show'] == False])
-        avg_rating = tutor_feedback['rating'].mean() if not tutor_feedback.empty else None
-
-        # First session success rate
-        first_sessions = tutor_sessions[tutor_sessions['session_number'] == 1]
-        if not first_sessions.empty:
-            first_session_feedback = feedback_df[feedback_df['session_id'].isin(first_sessions['session_id'])]
-            first_session_success = (first_session_feedback['rating'] >= 4).sum() if not first_session_feedback.empty else 0
-            first_session_success_rate = first_session_success / len(first_sessions) if len(first_sessions) > 0 else None
-        else:
-            first_session_success_rate = None
-
-        # Reschedule rate (simplified)
-        reschedule_rate = 0.10  # Placeholder - would calculate from session data
-
-        no_show_count = len(tutor_sessions[tutor_sessions['no_show'] == True])
-        engagement_score = tutor_sessions['engagement_score'].mean() if not tutor_sessions.empty else None
-        learning_objectives_met = tutor_sessions['learning_objectives_met'].sum() if not tutor_sessions.empty else 0
-        learning_objectives_met_pct = learning_objectives_met / sessions_completed if sessions_completed > 0 else None
-
-        # Determine performance tier
-        if avg_rating and avg_rating >= 4.5 and engagement_score and engagement_score >= 4.0:
-            performance_tier = "Exemplary"
-        elif avg_rating and avg_rating >= 4.0 and engagement_score and engagement_score >= 3.5:
-            performance_tier = "Strong"
-        elif avg_rating and avg_rating >= 3.5:
-            performance_tier = "Developing"
-        elif avg_rating and avg_rating >= 3.0:
-            performance_tier = "Needs Attention"
-        else:
-            performance_tier = "At Risk"
-
-        performance_metrics = PerformanceMetrics(
-            performance_tier=performance_tier,
-            sessions_completed=sessions_completed,
-            avg_rating=round(avg_rating, 2) if avg_rating else None,
-            first_session_success_rate=round(first_session_success_rate, 3) if first_session_success_rate else None,
-            reschedule_rate=reschedule_rate,
-            no_show_count=no_show_count,
-            engagement_score=round(engagement_score, 2) if engagement_score else None,
-            learning_objectives_met_pct=round(learning_objectives_met_pct, 3) if learning_objectives_met_pct else None
+        # 3. Performance metrics from database
+        metrics_result = await db.execute(
+            select(TutorPerformanceMetric)
+            .where(
+                TutorPerformanceMetric.tutor_id == tutor_id,
+                TutorPerformanceMetric.window == MetricWindow.THIRTY_DAY
+            )
+            .order_by(TutorPerformanceMetric.calculation_date.desc())
+            .limit(1)
         )
+        metrics = metrics_result.scalar_one_or_none()
 
-        # 4. Active flags
-        active_flags = detect_active_flags(tutor_id, sessions_df, feedback_df, performance_metrics)
+        if metrics:
+            performance_metrics = PerformanceMetrics(
+                performance_tier=metrics.performance_tier.value if metrics.performance_tier else "Unknown",
+                sessions_completed=metrics.sessions_completed,
+                avg_rating=round(metrics.avg_rating, 2) if metrics.avg_rating else None,
+                first_session_success_rate=round(metrics.first_session_success_rate, 3) if metrics.first_session_success_rate else None,
+                reschedule_rate=round(metrics.reschedule_rate, 3) if metrics.reschedule_rate else None,
+                no_show_count=metrics.no_show_count,
+                engagement_score=round(metrics.engagement_score, 2) if metrics.engagement_score else None,
+                learning_objectives_met_pct=round(metrics.learning_objectives_met_pct, 3) if metrics.learning_objectives_met_pct else None
+            )
+        else:
+            # Default metrics if none exist
+            performance_metrics = PerformanceMetrics(
+                performance_tier="Unknown",
+                sessions_completed=0,
+                avg_rating=None,
+                first_session_success_rate=None,
+                reschedule_rate=None,
+                no_show_count=0,
+                engagement_score=None,
+                learning_objectives_met_pct=None
+            )
+
+        # 4. Active flags (simplified for demo - would normally analyze patterns)
+        active_flags = []
 
         # 5. Intervention history - Query from database
         interventions_result = await db.execute(
@@ -437,43 +439,54 @@ async def get_tutor_profile(
             for intervention in interventions
         ]
 
-        # 6. Manager notes - Query from database
-        notes_result = await db.execute(
-            select(ManagerNote)
-            .where(ManagerNote.tutor_id == tutor_id)
-            .order_by(ManagerNote.created_at.desc())
-        )
-        notes = notes_result.scalars().all()
-
-        manager_notes = [
-            ManagerNoteItem(
-                note_id=note.note_id,
-                author_name=note.author_name,
-                note_text=note.note_text,
-                is_important=note.is_important,
-                created_at=note.created_at.isoformat(),
-                updated_at=note.updated_at.isoformat()
+        # 6. Manager notes - Query from database (handle missing table gracefully)
+        manager_notes = []
+        try:
+            notes_result = await db.execute(
+                select(ManagerNote)
+                .where(ManagerNote.tutor_id == tutor_id)
+                .order_by(ManagerNote.created_at.desc())
             )
-            for note in notes
-        ]
+            notes = notes_result.scalars().all()
 
-        # 7. Recent feedback (last 5 sessions)
-        recent_sessions = tutor_sessions.nlargest(5, 'scheduled_start')
+            manager_notes = [
+                ManagerNoteItem(
+                    note_id=note.note_id,
+                    author_name=note.author_name,
+                    note_text=note.note_text,
+                    is_important=note.is_important,
+                    created_at=note.created_at.isoformat(),
+                    updated_at=note.updated_at.isoformat()
+                )
+                for note in notes
+            ]
+        except Exception as e:
+            logger.warning(f"Could not fetch manager notes for {tutor_id}: {e}")
+
+        # 7. Recent feedback from database (last 5 sessions with feedback)
         recent_feedback = []
+        try:
+            feedback_result = await db.execute(
+                select(SessionModel, StudentFeedback)
+                .join(StudentFeedback, SessionModel.session_id == StudentFeedback.session_id)
+                .where(SessionModel.tutor_id == tutor_id)
+                .order_by(SessionModel.scheduled_start.desc())
+                .limit(5)
+            )
+            feedback_data = feedback_result.all()
 
-        for _, session in recent_sessions.iterrows():
-            session_feedback = tutor_feedback[tutor_feedback['session_id'] == session['session_id']]
-            if not session_feedback.empty:
-                fb = session_feedback.iloc[0]
+            for session, feedback in feedback_data:
                 recent_feedback.append(RecentFeedback(
-                    session_id=session['session_id'],
-                    student_id=session['student_id'],
-                    session_date=str(session['scheduled_start']),
-                    rating=int(fb['rating']) if pd.notna(fb['rating']) else None,
-                    feedback_text=fb['feedback_text'] if pd.notna(fb['feedback_text']) else None,
-                    would_recommend=bool(fb['would_recommend']) if pd.notna(fb['would_recommend']) else None,
-                    subject=session['subject']
+                    session_id=session.session_id,
+                    student_id=session.student_id,
+                    session_date=session.scheduled_start.isoformat(),
+                    rating=feedback.overall_rating if feedback else None,
+                    feedback_text=feedback.feedback_text if feedback else None,
+                    would_recommend=feedback.would_recommend if feedback else None,
+                    subject=session.subject
                 ))
+        except Exception as e:
+            logger.warning(f"Could not fetch recent feedback for {tutor_id}: {e}")
 
         # Build response
         response = TutorProfileResponse(

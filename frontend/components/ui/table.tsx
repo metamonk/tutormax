@@ -52,12 +52,19 @@ function TableFooter({ className, ...props }: React.ComponentProps<"tfoot">) {
   )
 }
 
-function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
+function TableRow({
+  className,
+  interactive = false,
+  ...props
+}: React.ComponentProps<"tr"> & {
+  interactive?: boolean
+}) {
   return (
     <tr
       data-slot="table-row"
       className={cn(
-        "hover:bg-muted/50 data-[state=selected]:bg-muted border-b transition-colors",
+        "hover:bg-muted/60 data-[state=selected]:bg-muted border-b transition-all duration-150",
+        interactive && "cursor-pointer hover:bg-accent/50 active:bg-accent/70",
         className
       )}
       {...props}

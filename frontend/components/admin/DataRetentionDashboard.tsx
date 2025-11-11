@@ -92,58 +92,74 @@ export function DataRetentionDashboard() {
       {/* Header Overview Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">FERPA Retention</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">7 Years</div>
-            <p className="text-xs text-muted-foreground">
-              {policy?.ferpa.retention_period_days} days retention period
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Eligible for Archival</CardTitle>
-            <Archive className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {scanResults?.summary.total_students_for_archival || 0}
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-muted-foreground">FERPA Retention</p>
+                <p className="mt-2 text-2xl font-bold">7 Years</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {policy?.ferpa.retention_period_days} days retention period
+                </p>
+              </div>
+              <div className="rounded-xl bg-blue-100 dark:bg-blue-900/30 p-3 text-blue-600 dark:text-blue-400">
+                <Clock className="h-4 w-4" />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Students past retention period
-            </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">GDPR Compliance</CardTitle>
-            <ShieldCheck className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">Active</div>
-            <p className="text-xs text-muted-foreground">
-              Right to be forgotten enabled
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Recent Actions</CardTitle>
-            <Database className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {report?.retention_actions_taken.archival_operations || 0}
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Eligible for Archival</p>
+                <p className="mt-2 text-2xl font-bold text-amber-600 dark:text-amber-400">
+                  {scanResults?.summary.total_students_for_archival || 0}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Students past retention period
+                </p>
+              </div>
+              <div className="rounded-xl bg-amber-100 dark:bg-amber-900/30 p-3 text-amber-600 dark:text-amber-400">
+                <Archive className="h-4 w-4" />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Archival operations this period
-            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-muted-foreground">GDPR Compliance</p>
+                <p className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">Active</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Right to be forgotten enabled
+                </p>
+              </div>
+              <div className="rounded-xl bg-emerald-100 dark:bg-emerald-900/30 p-3 text-emerald-600 dark:text-emerald-400">
+                <ShieldCheck className="h-4 w-4" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Recent Actions</p>
+                <p className="mt-2 text-2xl font-bold text-violet-600 dark:text-violet-400">
+                  {report?.retention_actions_taken.archival_operations || 0}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Archival operations this period
+                </p>
+              </div>
+              <div className="rounded-xl bg-violet-100 dark:bg-violet-900/30 p-3 text-violet-600 dark:text-violet-400">
+                <Database className="h-4 w-4" />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

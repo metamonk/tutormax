@@ -6,13 +6,13 @@ and complete interventions for at-risk tutors.
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import uuid4
 
 from fastapi import APIRouter, HTTPException, Depends, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_, or_, desc
+from sqlalchemy import select, func, and_, or_, desc, case
 from pydantic import BaseModel, Field
 
 from .config import settings
@@ -102,7 +102,7 @@ def calculate_intervention_metadata(intervention: Intervention) -> dict:
     metadata = {}
 
     if intervention.due_date:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         delta = intervention.due_date - now
         metadata['days_until_due'] = delta.days
         metadata['is_overdue'] = delta.days < 0
@@ -123,7 +123,7 @@ def calculate_intervention_metadata(intervention: Intervention) -> dict:
 
 @router.get("/", response_model=List[InterventionResponse])
 async def get_interventions(
-    status: Optional[str] = Query(None, description="Filter by status"),
+    status_filter: Optional[str] = Query(None, alias="status", description="Filter by status"),
     assigned_to: Optional[str] = Query(None, description="Filter by assigned user"),
     intervention_type: Optional[str] = Query(None, description="Filter by intervention type"),
     tutor_id: Optional[str] = Query(None, description="Filter by tutor ID"),
@@ -145,14 +145,14 @@ async def get_interventions(
         # Apply filters
         conditions = []
 
-        if status:
+        if status_filter:
             try:
-                status_enum = InterventionStatus(status)
+                status_enum = InterventionStatus(status_filter)
                 conditions.append(Intervention.status == status_enum)
             except ValueError:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Invalid status: {status}"
+                    detail=f"Invalid status: {status_filter}"
                 )
 
         if assigned_to:
@@ -175,7 +175,7 @@ async def get_interventions(
             conditions.append(
                 and_(
                     Intervention.due_date.isnot(None),
-                    Intervention.due_date < datetime.utcnow()
+                    Intervention.due_date < datetime.now(timezone.utc)
                 )
             )
 
@@ -183,8 +183,13 @@ async def get_interventions(
             query = query.where(and_(*conditions))
 
         # Order by: overdue first, then by due date
+        # Use case statement to sort overdue items first
+        is_overdue = case(
+            (Intervention.due_date < datetime.now(timezone.utc), 1),
+            else_=0
+        )
         query = query.order_by(
-            desc(Intervention.due_date < datetime.utcnow()),
+            desc(is_overdue),
             Intervention.due_date.asc()
         )
 
@@ -200,7 +205,7 @@ async def get_interventions(
         for intervention in interventions:
             # Get tutor name
             tutor_result = await db.execute(
-                select(Tutor.tutor_name).where(Tutor.tutor_id == intervention.tutor_id)
+                select(Tutor.name).where(Tutor.tutor_id == intervention.tutor_id)
             )
             tutor_name = tutor_result.scalar_one_or_none()
 
@@ -373,7 +378,7 @@ async def get_intervention(
 
         # Get tutor name
         tutor_result = await db.execute(
-            select(Tutor.tutor_name).where(Tutor.tutor_id == intervention.tutor_id)
+            select(Tutor.name).where(Tutor.tutor_id == intervention.tutor_id)
         )
         tutor_name = tutor_result.scalar_one_or_none()
 
@@ -444,7 +449,7 @@ async def assign_intervention(
 
         # Get tutor name
         tutor_result = await db.execute(
-            select(Tutor.tutor_name).where(Tutor.tutor_id == intervention.tutor_id)
+            select(Tutor.name).where(Tutor.tutor_id == intervention.tutor_id)
         )
         tutor_name = tutor_result.scalar_one_or_none()
 
@@ -527,7 +532,7 @@ async def update_intervention_status(
 
         # Get tutor name
         tutor_result = await db.execute(
-            select(Tutor.tutor_name).where(Tutor.tutor_id == intervention.tutor_id)
+            select(Tutor.name).where(Tutor.tutor_id == intervention.tutor_id)
         )
         tutor_name = tutor_result.scalar_one_or_none()
 
@@ -614,7 +619,7 @@ async def record_intervention_outcome(
 
         # Get tutor name
         tutor_result = await db.execute(
-            select(Tutor.tutor_name).where(Tutor.tutor_id == intervention.tutor_id)
+            select(Tutor.name).where(Tutor.tutor_id == intervention.tutor_id)
         )
         tutor_name = tutor_result.scalar_one_or_none()
 

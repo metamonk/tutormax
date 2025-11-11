@@ -48,11 +48,17 @@ export class WebSocketService {
       };
 
       this.ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        // WebSocket errors are typically followed by onclose, which handles reconnection
+        // Only log in development to avoid noise
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('WebSocket connection error (reconnecting...)');
+        }
       };
 
-      this.ws.onclose = () => {
-        console.log('WebSocket disconnected');
+      this.ws.onclose = (event) => {
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`WebSocket disconnected (code: ${event.code}), reconnecting...`);
+        }
         this.notifyConnectionChange(false);
         this.attemptReconnect();
       };

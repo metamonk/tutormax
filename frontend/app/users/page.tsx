@@ -352,15 +352,53 @@ export default function UsersPage() {
 
   return (
     <RequireRole roles={['admin']}>
-      <div className="container mx-auto py-8 px-4">
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl">User Management</CardTitle>
-                <CardDescription>Manage user accounts and permissions</CardDescription>
-              </div>
-              <div className="flex gap-2">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+        <div className="container mx-auto py-8 px-4 space-y-6">
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card className="transition-card hover-lift">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Users</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold">{users.length}</div>
+              </CardContent>
+            </Card>
+            <Card className="transition-card hover-lift">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Active Users</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-success">{users.filter(u => u.is_active).length}</div>
+              </CardContent>
+            </Card>
+            <Card className="transition-card hover-lift">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Inactive Users</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-muted-foreground">{users.filter(u => !u.is_active).length}</div>
+              </CardContent>
+            </Card>
+            <Card className="transition-card hover-lift">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Filtered Results</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-primary">{filteredUsers.length}</div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main User Management Card */}
+          <Card className="shadow-lg">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-2xl font-bold">User Management</CardTitle>
+                  <CardDescription className="mt-1">Manage user accounts, roles, and permissions</CardDescription>
+                </div>
+                <div className="flex gap-2">
                 <Button variant="outline" onClick={() => setBulkImportOpen(true)}>
                   <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -407,89 +445,138 @@ export default function UsersPage() {
               </div>
             </div>
           </CardHeader>
-          <CardContent>
-            {/* Filters */}
-            <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="search">Search</Label>
-                <Input
-                  id="search"
-                  placeholder="Search by name or email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
+          <CardContent className="space-y-6">
+            {/* Enhanced Filters */}
+            <div className="bg-muted/30 p-4 rounded-lg border border-border">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="search" className="text-sm font-semibold">Search Users</Label>
+                  <div className="relative">
+                    <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <Input
+                      id="search"
+                      placeholder="Search by name or email..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="role-filter" className="text-sm font-semibold">Filter by Role</Label>
+                  <select
+                    id="role-filter"
+                    className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
+                    value={roleFilter}
+                    onChange={(e) => setRoleFilter(e.target.value as UserRole | 'all')}
+                  >
+                    <option value="all">All Roles</option>
+                    <option value="admin">Admin</option>
+                    <option value="operations_manager">Operations Manager</option>
+                    <option value="people_ops">People Ops</option>
+                    <option value="tutor">Tutor</option>
+                    <option value="student">Student</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="status-filter" className="text-sm font-semibold">Filter by Status</Label>
+                  <select
+                    id="status-filter"
+                    className="w-full px-3 py-2 bg-background border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring transition-colors"
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
+                  >
+                    <option value="all">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                  </select>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="role-filter">Filter by Role</Label>
-                <select
-                  id="role-filter"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value as UserRole | 'all')}
-                >
-                  <option value="all">All Roles</option>
-                  <option value="admin">Admin</option>
-                  <option value="operations_manager">Operations Manager</option>
-                  <option value="people_ops">People Ops</option>
-                  <option value="tutor">Tutor</option>
-                  <option value="student">Student</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="status-filter">Filter by Status</Label>
-                <select
-                  id="status-filter"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'inactive')}
-                >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-            </div>
 
-            {/* Results count */}
-            <div className="mb-4 text-sm text-gray-600">
-              Showing {filteredUsers.length} of {users.length} users
+              {/* Results count with clear filters button */}
+              <div className="mt-4 flex items-center justify-between">
+                <div className="text-sm text-muted-foreground">
+                  Showing <span className="font-semibold text-foreground">{filteredUsers.length}</span> of <span className="font-semibold text-foreground">{users.length}</span> users
+                </div>
+                {(searchTerm || roleFilter !== 'all' || statusFilter !== 'all') && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setRoleFilter('all');
+                      setStatusFilter('all');
+                    }}
+                  >
+                    Clear filters
+                  </Button>
+                )}
+              </div>
             </div>
 
             {loading ? (
-              <div className="text-center py-8">Loading users...</div>
+              <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                <div className="text-muted-foreground">Loading users...</div>
+              </div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 space-y-4 text-center">
+                <svg className="h-16 w-16 text-muted-foreground opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+                <div>
+                  <div className="font-semibold text-lg mb-1">No users found</div>
+                  <div className="text-sm text-muted-foreground">Try adjusting your search or filter criteria</div>
+                </div>
+                {(searchTerm || roleFilter !== 'all' || statusFilter !== 'all') && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchTerm('');
+                      setRoleFilter('all');
+                      setStatusFilter('all');
+                    }}
+                  >
+                    Clear all filters
+                  </Button>
+                )}
+              </div>
             ) : (
               <>
-                <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Roles</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedUsers.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.email}</TableCell>
-                      <TableCell>{user.full_name}</TableCell>
-                      <TableCell>
-                        <RoleBadge roles={user.roles} />
-                      </TableCell>
-                      <TableCell>
-                        {user.is_active ? (
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                            Active
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
-                            Inactive
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                <div className="rounded-lg border border-border overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="font-semibold">Email</TableHead>
+                        <TableHead className="font-semibold">Name</TableHead>
+                        <TableHead className="font-semibold">Roles</TableHead>
+                        <TableHead className="font-semibold">Status</TableHead>
+                        <TableHead className="text-right font-semibold">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedUsers.map((user) => (
+                        <TableRow key={user.id} className="transition-colors hover:bg-muted/30">
+                          <TableCell className="font-medium">{user.email}</TableCell>
+                          <TableCell>{user.full_name}</TableCell>
+                          <TableCell>
+                            <RoleBadge roles={user.roles} />
+                          </TableCell>
+                          <TableCell>
+                            {user.is_active ? (
+                              <Badge variant="outline" className="bg-success/10 text-success border-success/20 font-medium">
+                                Active
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-muted text-muted-foreground border-muted-foreground/20 font-medium">
+                                Inactive
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
                           <RoleAssignmentDialog
                             userId={user.id}
                             currentRoles={user.roles}
@@ -529,41 +616,82 @@ export default function UsersPage() {
                           </Button>
                         </div>
                       </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-
-              {/* Pagination Controls */}
-              {filteredUsers.length > itemsPerPage && (
-                <div className="flex items-center justify-between px-4 py-4 border-t mt-4">
-                  <div className="text-sm text-gray-600">
-                    Showing {startIndex + 1} to {Math.min(endIndex, filteredUsers.length)} of{' '}
-                    {filteredUsers.length} users
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                    >
-                      Previous
-                    </Button>
-                    <div className="text-sm">
-                      Page {currentPage} of {totalPages}
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                    >
-                      Next
-                    </Button>
-                  </div>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
-              )}
+
+                {/* Enhanced Pagination Controls */}
+                {filteredUsers.length > itemsPerPage && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+                    <div className="text-sm text-muted-foreground">
+                      Showing <span className="font-medium text-foreground">{startIndex + 1}</span> to{' '}
+                      <span className="font-medium text-foreground">{Math.min(endIndex, filteredUsers.length)}</span> of{' '}
+                      <span className="font-medium text-foreground">{filteredUsers.length}</span> users
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-2">
+                        <label className="text-sm text-muted-foreground">Rows per page:</label>
+                        <select
+                          value={itemsPerPage}
+                          onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                          className="px-2 py-1 bg-background border border-input rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        >
+                          <option value={10}>10</option>
+                          <option value={25}>25</option>
+                          <option value={50}>50</option>
+                          <option value={100}>100</option>
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(1)}
+                          disabled={currentPage === 1}
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                          </svg>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                          </svg>
+                        </Button>
+                        <div className="px-4 py-1 text-sm font-medium">
+                          {currentPage} / {totalPages}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                          </svg>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setCurrentPage(totalPages)}
+                          disabled={currentPage === totalPages}
+                        >
+                          <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                          </svg>
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </CardContent>
@@ -650,6 +778,7 @@ export default function UsersPage() {
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
     </RequireRole>
   );

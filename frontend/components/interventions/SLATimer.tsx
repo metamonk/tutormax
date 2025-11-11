@@ -72,30 +72,30 @@ export function SLATimer({ intervention, showAlert = true }: SLATimerProps) {
 
   const urgencyConfig = {
     critical: {
-      color: 'text-red-600',
-      bgColor: 'bg-red-600',
+      color: 'text-destructive',
+      bgColor: 'bg-destructive',
       badgeVariant: 'destructive' as const,
       icon: AlertCircle,
       label: 'OVERDUE',
     },
     urgent: {
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-600',
+      color: 'text-destructive',
+      bgColor: 'bg-destructive',
       badgeVariant: 'destructive' as const,
       icon: AlertTriangle,
       label: 'URGENT',
     },
     warning: {
-      color: 'text-yellow-600',
-      bgColor: 'bg-yellow-600',
-      badgeVariant: 'default' as const,
+      color: 'text-warning-foreground',
+      bgColor: 'bg-warning',
+      badgeVariant: 'warning' as const,
       icon: Clock,
       label: 'DUE SOON',
     },
     normal: {
-      color: 'text-green-600',
-      bgColor: 'bg-green-600',
-      badgeVariant: 'secondary' as const,
+      color: 'text-success',
+      bgColor: 'bg-success',
+      badgeVariant: 'success' as const,
       icon: CheckCircle,
       label: 'ON TRACK',
     },
@@ -175,12 +175,12 @@ export function SLATimer({ intervention, showAlert = true }: SLATimerProps) {
               value={Math.min(100, slaPercentage)}
               className={`h-2 ${
                 isOverdue
-                  ? '[&>div]:bg-red-600'
+                  ? '[&>div]:bg-destructive'
                   : slaPercentage > 90
-                  ? '[&>div]:bg-orange-600'
+                  ? '[&>div]:bg-destructive'
                   : slaPercentage > 75
-                  ? '[&>div]:bg-yellow-600'
-                  : '[&>div]:bg-green-600'
+                  ? '[&>div]:bg-warning'
+                  : '[&>div]:bg-success'
               }`}
             />
           </div>

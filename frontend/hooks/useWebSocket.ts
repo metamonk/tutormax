@@ -84,6 +84,48 @@ export function useWebSocket() {
   useEffect(() => {
     const wsService = wsServiceRef.current;
 
+    // Fetch initial data from API
+    const fetchInitialData = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+        // Fetch alerts
+        const alertsResponse = await fetch(`${apiUrl}/api/analytics/at-risk-tutors`);
+        if (alertsResponse.ok) {
+          const alerts = await alertsResponse.json();
+          setState((prevState) => ({
+            ...prevState,
+            alerts: alerts,
+          }));
+        }
+
+        // Fetch analytics overview (includes performance_distribution for tiers)
+        const analyticsResponse = await fetch(`${apiUrl}/api/analytics/overview`);
+        if (analyticsResponse.ok) {
+          const analytics = await analyticsResponse.json();
+          setState((prevState) => ({
+            ...prevState,
+            analytics: analytics,
+          }));
+        }
+
+        // Fetch tutor metrics for charts
+        const metricsResponse = await fetch(`${apiUrl}/api/analytics/tutor-metrics?window=30day`);
+        if (metricsResponse.ok) {
+          const metrics = await metricsResponse.json();
+          setState((prevState) => ({
+            ...prevState,
+            tutorMetrics: metrics,
+          }));
+        }
+      } catch (error) {
+        console.error('Failed to fetch initial data:', error);
+      }
+    };
+
+    // Load initial data
+    fetchInitialData();
+
     // Subscribe to messages
     const unsubscribe = wsService.subscribe(handleMessage);
 

@@ -77,15 +77,24 @@ const TIER_DEFINITIONS: TierDefinition[] = [
   },
 ];
 
-// Map performance tiers from analytics to our tier system
-const mapPerformanceTierToRating = (tier: string): number => {
-  const tierMap: Record<string, number> = {
+// Map backend performance tiers to our display tier system
+const mapPerformanceTierToDisplayTier = (backendTier: string): string => {
+  // Backend tiers: Exemplary, Strong, Developing, Needs Attention, At Risk
+  // Display tiers: Platinum (≥90%), Gold (80-89%), Silver (70-79%), Bronze (<70%)
+  const tierScores: Record<string, number> = {
     'Exemplary': 95,
     'Strong': 85,
     'Developing': 75,
-    'Needs Support': 60,
+    'Needs Attention': 65,
+    'At Risk': 50,
   };
-  return tierMap[tier] || 0;
+
+  const score = tierScores[backendTier] || 0;
+
+  if (score >= 90) return 'Platinum';
+  if (score >= 80) return 'Gold';
+  if (score >= 70) return 'Silver';
+  return 'Bronze';
 };
 
 export function PerformanceTiers({ analytics, tutorMetrics, onTierClick }: PerformanceTiersProps) {
@@ -93,10 +102,7 @@ export function PerformanceTiers({ analytics, tutorMetrics, onTierClick }: Perfo
 
   // Calculate tutor counts per tier
   const tierCounts = useMemo(() => {
-    if (!analytics) return null;
-
-    // Get 30-day metrics for most accurate tier assessment
-    const thirtyDayMetrics = tutorMetrics.filter((m) => m.window === '30day');
+    if (!analytics?.performance_distribution) return null;
 
     const counts: Record<string, number> = {
       Platinum: 0,
@@ -105,19 +111,14 @@ export function PerformanceTiers({ analytics, tutorMetrics, onTierClick }: Perfo
       Bronze: 0,
     };
 
-    thirtyDayMetrics.forEach((metric) => {
-      const rating = mapPerformanceTierToRating(metric.performance_tier);
-
-      for (const tierDef of TIER_DEFINITIONS) {
-        if (rating >= tierDef.minScore && rating <= tierDef.maxScore) {
-          counts[tierDef.name]++;
-          break;
-        }
-      }
+    // Map backend performance distribution to display tiers
+    Object.entries(analytics.performance_distribution).forEach(([backendTier, count]) => {
+      const displayTier = mapPerformanceTierToDisplayTier(backendTier);
+      counts[displayTier] += count;
     });
 
     return counts;
-  }, [analytics, tutorMetrics]);
+  }, [analytics]);
 
   const handleTierClick = (tierName: string) => {
     const newSelectedTier = selectedTier === tierName ? null : tierName;

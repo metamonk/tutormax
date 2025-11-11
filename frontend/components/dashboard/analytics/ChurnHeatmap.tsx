@@ -54,6 +54,11 @@ export function ChurnHeatmap() {
       }
 
       const response = await fetch(`http://localhost:8000${endpoint}?${params}`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch heatmap: ${response.status} ${response.statusText}`);
+      }
+
       const heatmapData = await response.json();
       setData(heatmapData);
     } catch (error) {

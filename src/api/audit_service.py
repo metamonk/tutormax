@@ -573,7 +573,7 @@ async def log_audit_event(
         action=action,
         resource_type=resource_type,
         resource_id=resource_id,
-        details=details,
+        metadata=details,
         ip_address=ip_address,
         user_agent=user_agent,
     )

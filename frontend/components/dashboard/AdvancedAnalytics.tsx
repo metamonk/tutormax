@@ -60,6 +60,11 @@ export function AdvancedAnalytics() {
     try {
       setRefreshing(true);
       const response = await fetch('http://localhost:8000/api/analytics/overview');
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch analytics: ${response.status} ${response.statusText}`);
+      }
+
       const data = await response.json();
       setOverview(data);
     } catch (error) {
@@ -133,13 +138,13 @@ export function AdvancedAnalytics() {
           <Card>
             <CardHeader className="pb-3">
               <CardDescription>Total Tutors</CardDescription>
-              <CardTitle className="text-3xl">{overview.summary.total_tutors}</CardTitle>
+              <CardTitle className="text-3xl">{overview.total_tutors}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center text-sm">
                 <Users className="h-4 w-4 mr-2 text-blue-600" />
                 <span className="text-muted-foreground">
-                  {overview.summary.active_tutors} active
+                  {overview.active_tutors} active
                 </span>
               </div>
             </CardContent>
@@ -150,7 +155,7 @@ export function AdvancedAnalytics() {
             <CardHeader className="pb-3">
               <CardDescription>30-Day Churn Rate</CardDescription>
               <CardTitle className="text-3xl">
-                {overview.summary.churn_rate_30d.toFixed(1)}%
+                {overview.churn_rate_30d.toFixed(1)}%
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -175,7 +180,7 @@ export function AdvancedAnalytics() {
             <CardHeader className="pb-3">
               <CardDescription>Avg Retention Rate</CardDescription>
               <CardTitle className="text-3xl">
-                {overview.summary.avg_retention_rate.toFixed(1)}%
+                {overview.avg_retention_rate.toFixed(1)}%
               </CardTitle>
             </CardHeader>
             <CardContent>

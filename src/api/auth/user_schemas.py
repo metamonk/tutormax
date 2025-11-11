@@ -4,7 +4,7 @@ Pydantic schemas for User CRUD operations with FastAPI-Users.
 
 from typing import List, Optional
 from fastapi_users import schemas
-from pydantic import EmailStr, Field
+from pydantic import EmailStr, Field, ConfigDict
 
 from ...database.models import UserRole, OAuthProvider
 
@@ -21,6 +21,8 @@ class UserRead(schemas.BaseUser[int]):
     oauth_provider: Optional[OAuthProvider] = None
     tutor_id: Optional[str] = None
     student_id: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserCreate(schemas.BaseUserCreate):

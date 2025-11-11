@@ -44,16 +44,16 @@ export function ExportButton({ reportType, filters = {}, className }: ExportButt
       let endpoint = '';
       switch (reportType) {
         case 'tutor-performance':
-          endpoint = '/api/v1/reports/tutor-performance/export';
+          endpoint = '/api/reports/tutor-performance/export';
           break;
         case 'interventions':
-          endpoint = '/api/v1/reports/interventions/export';
+          endpoint = '/api/reports/interventions/export';
           break;
         case 'analytics-summary':
-          endpoint = '/api/v1/reports/analytics-summary/export';
+          endpoint = '/api/reports/analytics-summary/export';
           break;
         case 'custom':
-          endpoint = '/api/v1/reports/custom-report';
+          endpoint = '/api/reports/custom-report';
           break;
       }
 

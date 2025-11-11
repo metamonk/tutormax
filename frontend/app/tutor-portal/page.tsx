@@ -5,7 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TutorMetrics, TutorSessions, TutorRecommendations, SessionRatings } from '@/components/tutor-portal';
+import { TutorMetricsV2 } from '@/components/tutor-portal/TutorMetricsV2';
+import { TutorSessions, TutorRecommendations, SessionRatings } from '@/components/tutor-portal';
 import { BadgeGallery } from '@/components/tutor-portal/BadgeGallery';
 import { GoalTracker } from '@/components/tutor-portal/GoalTracker';
 import { TrainingLibrary } from '@/components/tutor-portal/TrainingLibrary';
@@ -26,8 +27,8 @@ export default function TutorPortalPage() {
   const [selectedWindow, setSelectedWindow] = useState<'7day' | '30day' | '90day'>('30day');
   const [error, setError] = useState<string | null>(null);
 
-  // Get tutor ID from user context
-  const tutorId = user?.tutor_id;
+  // Get tutor ID from user context, use demo tutor for admin users
+  const tutorId = user?.tutor_id || (user?.email === 'admin@tutormax.com' ? 'hp_000' : null);
 
   const loadData = async () => {
     if (!tutorId) {
@@ -113,14 +114,14 @@ export default function TutorPortalPage() {
     );
   }
 
-  if (!user.roles?.includes('tutor')) {
+  if (!user.roles?.includes('tutor') && !user.roles?.includes('admin')) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-6">
         <div className="max-w-4xl mx-auto">
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
             <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
             <p className="text-muted-foreground mb-6">
-              You must have the tutor role to access this portal.
+              You must have the tutor or admin role to access this portal.
             </p>
             <Button onClick={() => router.push('/')}>Go Home</Button>
           </div>
@@ -153,7 +154,7 @@ export default function TutorPortalPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -168,7 +169,7 @@ export default function TutorPortalPage() {
 
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+              <h1 className="text-3xl font-bold tracking-tight">
                 Tutor Portal
               </h1>
               <p className="text-muted-foreground mt-1">
@@ -180,6 +181,15 @@ export default function TutorPortalPage() {
               Refresh
             </Button>
           </div>
+
+          {/* Demo Mode Banner */}
+          {user?.email === 'admin@tutormax.com' && tutorId === 'hp_000' && (
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p className="text-sm text-blue-900 dark:text-blue-100">
+                <span className="font-semibold">Demo Mode:</span> Viewing as Jessica Pearson (Platinum Tier Tutor)
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Time Window Selector */}
@@ -220,7 +230,7 @@ export default function TutorPortalPage() {
           </TabsList>
 
           <TabsContent value="metrics" className="space-y-6">
-            <TutorMetrics data={metricsData} loading={loading} />
+            <TutorMetricsV2 data={metricsData} loading={loading} />
           </TabsContent>
 
           <TabsContent value="badges" className="space-y-6">

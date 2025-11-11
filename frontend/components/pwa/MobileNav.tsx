@@ -97,7 +97,7 @@ export function MobileNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 z-40 md:hidden safe-area-inset-bottom"
+      className="fixed bottom-0 left-0 right-0 bg-sidebar border-t border-sidebar-border z-40 md:hidden safe-area-inset-bottom backdrop-blur-lg"
       onTouchStart={onTouchStart}
       onTouchMove={onTouchMove}
       onTouchEnd={onTouchEnd}
@@ -113,19 +113,24 @@ export function MobileNav() {
               key={item.href}
               onClick={() => router.push(item.href)}
               className={cn(
-                'flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all min-w-[64px] min-h-[48px]',
-                'active:scale-95',
+                'flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-lg transition-all duration-200',
+                'min-w-[64px] min-h-[44px]',
+                'active:scale-95 active:transition-transform active:duration-100',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring',
                 isActive
-                  ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                  ? 'text-sidebar-primary-foreground bg-sidebar-primary shadow-sm'
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
               )}
               aria-label={item.label}
             >
               <Icon className={cn(
-                'h-5 w-5',
-                isActive && 'animate-pulse'
+                'h-5 w-5 transition-transform duration-200',
+                isActive && 'scale-110'
               )} />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <span className={cn(
+                'text-[10px] font-medium transition-all duration-200',
+                isActive && 'font-semibold'
+              )}>{item.label}</span>
             </button>
           );
         })}

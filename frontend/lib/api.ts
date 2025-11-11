@@ -142,8 +142,8 @@ class ApiClient {
 
   // User management endpoints (admin only)
   async getUsers(): Promise<User[]> {
-    const response = await this.client.get<User[]>('/api/admin/users');
-    return response.data;
+    const response = await this.client.get<{ success: boolean; users: User[]; total: number; page: number; page_size: number; total_pages: number }>('/api/admin/users');
+    return response.data.users;
   }
 
   async getUser(userId: number): Promise<User> {
@@ -171,7 +171,7 @@ class ApiClient {
     window: '7day' | '30day' | '90day' = '30day'
   ): Promise<TutorPerformanceData> {
     const response = await this.client.get<TutorPerformanceData>(
-      `/api/v1/tutors/${tutorId}/metrics`,
+      `/api/tutors/${tutorId}/metrics`,
       { params: { window } }
     );
     return response.data;
@@ -183,7 +183,7 @@ class ApiClient {
     offset: number = 0
   ): Promise<TutorSessionsResponse> {
     const response = await this.client.get<TutorSessionsResponse>(
-      `/api/v1/tutors/${tutorId}/sessions`,
+      `/api/tutors/${tutorId}/sessions`,
       { params: { limit, offset } }
     );
     return response.data;
@@ -191,7 +191,7 @@ class ApiClient {
 
   async getTutorRecommendations(tutorId: string): Promise<TutorRecommendationsResponse> {
     const response = await this.client.get<TutorRecommendationsResponse>(
-      `/api/v1/tutors/${tutorId}/recommendations`
+      `/api/tutors/${tutorId}/recommendations`
     );
     return response.data;
   }
@@ -202,7 +202,7 @@ class ApiClient {
     offset: number = 0
   ): Promise<{ success: boolean; feedback: any[]; pagination: any }> {
     const response = await this.client.get(
-      `/api/v1/tutors/${tutorId}/feedback`,
+      `/api/tutors/${tutorId}/feedback`,
       { params: { limit, offset } }
     );
     return response.data;
@@ -219,7 +219,7 @@ class ApiClient {
       subjects: string[];
       education_level?: string;
       location?: string;
-    }>(`/api/v1/tutors/${tutorId}/profile`);
+    }>(`/api/tutors/${tutorId}/profile`);
 
     return {
       tutor_id: response.data.tutor_id,
@@ -236,7 +236,7 @@ class ApiClient {
   // Tutor Profile endpoints (for managers)
   async getTutorProfileDetail(tutorId: string): Promise<TutorProfileResponse> {
     const response = await this.client.get<TutorProfileResponse>(
-      `/api/v1/tutor-profile/${tutorId}`
+      `/api/tutor-profile/${tutorId}`
     );
     return response.data;
   }
@@ -248,7 +248,7 @@ class ApiClient {
     authorName: string
   ): Promise<{ success: boolean; note_id: string }> {
     const response = await this.client.post<{ success: boolean; note_id: string }>(
-      `/api/v1/tutor-profile/${tutorId}/notes`,
+      `/api/tutor-profile/${tutorId}/notes`,
       {
         note_text: noteText,
         is_important: isImportant,
@@ -265,7 +265,7 @@ class ApiClient {
     isImportant: boolean
   ): Promise<{ success: boolean }> {
     const response = await this.client.put<{ success: boolean }>(
-      `/api/v1/tutor-profile/${tutorId}/notes/${noteId}`,
+      `/api/tutor-profile/${tutorId}/notes/${noteId}`,
       {
         note_text: noteText,
         is_important: isImportant,
@@ -276,7 +276,7 @@ class ApiClient {
 
   async deleteManagerNote(tutorId: string, noteId: string): Promise<{ success: boolean }> {
     const response = await this.client.delete<{ success: boolean }>(
-      `/api/v1/tutor-profile/${tutorId}/notes/${noteId}`
+      `/api/tutor-profile/${tutorId}/notes/${noteId}`
     );
     return response.data;
   }
@@ -377,18 +377,18 @@ class ApiClient {
 
   // Gamification endpoints
   async getTutorBadges(tutorId: string): Promise<any> {
-    const response = await this.client.get(`/api/v1/gamification/${tutorId}/badges`);
+    const response = await this.client.get(`/api/gamification/${tutorId}/badges`);
     return response.data;
   }
 
   async getPeerComparison(tutorId: string): Promise<any> {
-    const response = await this.client.get(`/api/v1/gamification/${tutorId}/peer-comparison`);
+    const response = await this.client.get(`/api/gamification/${tutorId}/peer-comparison`);
     return response.data;
   }
 
   // Tutor Goals endpoints
   async getTutorGoals(tutorId: string): Promise<any> {
-    const response = await this.client.get(`/api/v1/tutor-goals/${tutorId}`);
+    const response = await this.client.get(`/api/tutor-goals/${tutorId}`);
     return response.data;
   }
 
@@ -399,12 +399,12 @@ class ApiClient {
     custom_title?: string;
     custom_description?: string;
   }): Promise<any> {
-    const response = await this.client.post(`/api/v1/tutor-goals/${tutorId}`, goalData);
+    const response = await this.client.post(`/api/tutor-goals/${tutorId}`, goalData);
     return response.data;
   }
 
   async deleteTutorGoal(tutorId: string, goalId: string): Promise<any> {
-    const response = await this.client.delete(`/api/v1/tutor-goals/${tutorId}/${goalId}`);
+    const response = await this.client.delete(`/api/tutor-goals/${tutorId}/${goalId}`);
     return response.data;
   }
 
@@ -415,13 +415,13 @@ class ApiClient {
     resource_type?: string;
     search?: string;
   }): Promise<any> {
-    const response = await this.client.get('/api/v1/training-resources/', { params });
+    const response = await this.client.get('/api/training-resources/', { params });
     return response.data;
   }
 
   async updateResourceProgress(tutorId: string, resourceId: string, completed: boolean): Promise<any> {
     const response = await this.client.post(
-      `/api/v1/training-resources/${tutorId}/${resourceId}/progress`,
+      `/api/training-resources/${tutorId}/${resourceId}/progress`,
       { completed }
     );
     return response.data;

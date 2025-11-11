@@ -8,11 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TutorProfileHeader, TutorActiveFlags, TutorManagerNotes } from '@/components/tutor-profile';
+import { TutorProfileHeaderV2 } from '@/components/tutor-profile/TutorProfileHeaderV2';
+import { TutorActiveFlags, TutorManagerNotes } from '@/components/tutor-profile';
 import { SessionRatings } from '@/components/tutor-portal';
 import type { TutorProfileResponse, TutorProfilePerformanceMetrics, RecentFeedback, InterventionHistoryItem } from '@/lib/types';
 import type { RatingData } from '@/components/tutor-portal/SessionRatings';
 import { ArrowLeft, RefreshCw, Star, MessageSquare, Target, Calendar } from 'lucide-react';
+import { ProfileSkeleton, CardSkeleton, MetricsGridSkeleton } from '@/components/ui/skeleton-patterns';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function TutorProfilePage() {
   const params = useParams();
@@ -111,10 +114,28 @@ export default function TutorProfilePage() {
 
   if (loading || !profileData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600" />
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header skeleton */}
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-9 w-24" />
+            <Skeleton className="h-9 w-24" />
+          </div>
+
+          {/* Profile header skeleton */}
+          <Card className="p-6">
+            <ProfileSkeleton />
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
+              <CardSkeleton />
+              <CardSkeleton />
+              <CardSkeleton />
+            </div>
+          </Card>
+
+          {/* Tabs and content skeleton */}
+          <div className="space-y-6">
+            <Skeleton className="h-10 w-full max-w-md" />
+            <MetricsGridSkeleton metrics={4} />
           </div>
         </div>
       </div>
@@ -122,7 +143,7 @@ export default function TutorProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
@@ -140,9 +161,10 @@ export default function TutorProfilePage() {
         </div>
 
         {/* Profile Header */}
-        <TutorProfileHeader
+        <TutorProfileHeaderV2
           tutorInfo={profileData.tutor_info}
           churnPredictions={profileData.churn_predictions}
+          performanceMetrics={profileData.performance_metrics}
         />
 
         {/* Content Tabs */}
@@ -193,8 +215,36 @@ export default function TutorProfilePage() {
   );
 }
 
+// Helper function to normalize percentage values (handles both 0-1 and 0-100 formats)
+function normalizePercentage(value: number | null): number | null {
+  if (value === null) return null;
+  // If value is between 0-1, convert to percentage
+  if (value >= 0 && value <= 1) {
+    return value * 100;
+  }
+  // If value is already 0-100, return as-is (capped at 100)
+  return Math.min(value, 100);
+}
+
+// Helper function to normalize engagement score (should be 0-1, display as 0-1)
+function normalizeEngagement(value: number | null): number | null {
+  if (value === null) return null;
+  // If value is > 1, it's incorrectly stored as percentage, convert back
+  if (value > 1) {
+    return value / 100;
+  }
+  // Already in correct 0-1 format
+  return value;
+}
+
 // Performance Metrics Card
 function PerformanceMetricsCard({ metrics }: { metrics: TutorProfilePerformanceMetrics }) {
+  // Normalize values to handle both decimal and percentage formats
+  const engagementScore = normalizeEngagement(metrics.engagement_score);
+  const firstSessionSuccess = normalizePercentage(metrics.first_session_success_rate);
+  const learningObjectives = normalizePercentage(metrics.learning_objectives_met_pct);
+  const rescheduleRate = normalizePercentage(metrics.reschedule_rate);
+
   return (
     <Card>
       <CardHeader>
@@ -208,11 +258,11 @@ function PerformanceMetricsCard({ metrics }: { metrics: TutorProfilePerformanceM
           <MetricItem label="Tier" value={metrics.performance_tier} />
           <MetricItem label="Sessions" value={metrics.sessions_completed.toString()} />
           <MetricItem label="Avg Rating" value={metrics.avg_rating?.toFixed(1) || 'N/A'} suffix="/5.0" />
-          <MetricItem label="Engagement" value={metrics.engagement_score?.toFixed(1) || 'N/A'} suffix="/5.0" />
-          <MetricItem label="First Session Success" value={metrics.first_session_success_rate ? `${(metrics.first_session_success_rate * 100).toFixed(0)}%` : 'N/A'} />
-          <MetricItem label="Goals Met" value={metrics.learning_objectives_met_pct ? `${(metrics.learning_objectives_met_pct * 100).toFixed(0)}%` : 'N/A'} />
+          <MetricItem label="Engagement" value={engagementScore !== null ? engagementScore.toFixed(2) : 'N/A'} />
+          <MetricItem label="First Session Success" value={firstSessionSuccess !== null ? `${firstSessionSuccess.toFixed(0)}%` : 'N/A'} />
+          <MetricItem label="Goals Met" value={learningObjectives !== null ? `${learningObjectives.toFixed(0)}%` : 'N/A'} />
           <MetricItem label="No Shows" value={metrics.no_show_count.toString()} />
-          <MetricItem label="Reschedule Rate" value={metrics.reschedule_rate ? `${(metrics.reschedule_rate * 100).toFixed(0)}%` : 'N/A'} />
+          <MetricItem label="Reschedule Rate" value={rescheduleRate !== null ? `${rescheduleRate.toFixed(1)}%` : 'N/A'} />
         </div>
       </CardContent>
     </Card>

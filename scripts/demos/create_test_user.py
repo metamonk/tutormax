@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from sqlalchemy import select, text
 from src.database.database import async_session_maker
-from src.database.models import User, UserRole
+from src.database.models import User, UserRole, Tutor
 from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -78,7 +78,14 @@ async def check_and_create_users():
         tutor_exists = await session.execute(
             select(User).where(User.email == tutor_email)
         )
-        if not tutor_exists.scalar():
+        existing_tutor_user = tutor_exists.scalar()
+
+        # Get a tutor record to link to
+        first_tutor = await session.execute(select(Tutor).limit(1))
+        tutor_record = first_tutor.scalar()
+        tutor_id = tutor_record.tutor_id if tutor_record else None
+
+        if not existing_tutor_user:
             tutor_user = User(
                 email=tutor_email,
                 hashed_password=pwd_context.hash("tutor123"),  # CHANGE IN PRODUCTION!
@@ -87,12 +94,20 @@ async def check_and_create_users():
                 is_active=True,
                 is_superuser=False,
                 is_verified=True,
+                tutor_id=tutor_id,
             )
             session.add(tutor_user)
             print(f"\n✓ Created tutor user: {tutor_email}")
             print(f"  Password: tutor123")
+            print(f"  Linked to tutor: {tutor_id}")
         else:
-            print(f"\n• Tutor user already exists: {tutor_email}")
+            # Update existing tutor user to have tutor_id if missing
+            if not existing_tutor_user.tutor_id and tutor_id:
+                existing_tutor_user.tutor_id = tutor_id
+                print(f"\n• Tutor user already exists: {tutor_email}")
+                print(f"  Updated with tutor_id: {tutor_id}")
+            else:
+                print(f"\n• Tutor user already exists: {tutor_email}")
 
         # Create test student user
         student_email = "student@tutormax.com"

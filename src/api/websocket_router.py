@@ -80,43 +80,73 @@ async def _get_analytics(db: AsyncSession) -> dict:
         total_tutors = total_tutors_result.scalar() or 0
 
         # Get latest metrics for active tutors (30-day window)
+        # Note: MetricWindow enum uses uppercase with underscore (e.g., THIRTY_DAY)
+        # Get the most recent metric for each tutor
+        from src.database.models import MetricWindow
+        from sqlalchemy import distinct, and_
+
+        # Get all 30-day metrics, we'll deduplicate in Python
         latest_metrics_query = (
             select(TutorPerformanceMetric)
-            .where(TutorPerformanceMetric.window == "30day")
-            .order_by(TutorPerformanceMetric.calculation_date.desc())
+            .where(TutorPerformanceMetric.window == MetricWindow.THIRTY_DAY)
+            .order_by(TutorPerformanceMetric.tutor_id, TutorPerformanceMetric.calculation_date.desc())
         )
-        metrics_result = await db.execute(latest_metrics_query)
-        metrics = metrics_result.scalars().all()
+        all_metrics_result = await db.execute(latest_metrics_query)
+        all_metrics = all_metrics_result.scalars().all()
+
+        # Deduplicate: Keep only the latest metric for each tutor
+        seen_tutors = set()
+        metrics = []
+        for metric in all_metrics:
+            if metric.tutor_id not in seen_tutors:
+                metrics.append(metric)
+                seen_tutors.add(metric.tutor_id)
 
         # Calculate performance distribution
+        # Note: PerformanceTier enum values match database exactly
         performance_distribution = {
-            "Needs Support": 0,
-            "Developing": 0,
-            "Strong": 0,
             "Exemplary": 0,
+            "Strong": 0,
+            "Developing": 0,
+            "Needs Attention": 0,
+            "At Risk": 0,
         }
 
         total_rating = 0
         total_engagement = 0
+
+        # Count unique tutors and aggregate metrics
+        # Note: We only use 30-day metrics for tier distribution and averages
         active_tutors = len(metrics)
 
         for metric in metrics:
-            performance_distribution[metric.performance_tier] += 1
-            total_rating += metric.avg_rating
-            total_engagement += metric.engagement_score
+            # Convert enum value to string for dictionary key
+            tier_key = metric.performance_tier.value if hasattr(metric.performance_tier, 'value') else str(metric.performance_tier)
+            if tier_key in performance_distribution:
+                performance_distribution[tier_key] += 1
+            # Aggregate ratings and engagement (only from 30-day window)
+            total_rating += (metric.avg_rating or 0)
+            total_engagement += (metric.engagement_score or 0)
 
         avg_rating = total_rating / active_tutors if active_tutors > 0 else 0
         avg_engagement_score = total_engagement / active_tutors if active_tutors > 0 else 0
 
-        # Get session counts (would need to aggregate from sessions table)
-        # For now, return mock data
-        total_sessions_7day = sum(m.sessions_completed for m in metrics if m.window == "7day")
+        # Get session counts from metrics
+        # Query 7-day metrics separately
+        seven_day_query = (
+            select(TutorPerformanceMetric)
+            .where(TutorPerformanceMetric.window == MetricWindow.SEVEN_DAY)
+        )
+        seven_day_result = await db.execute(seven_day_query)
+        seven_day_metrics = seven_day_result.scalars().all()
+
+        total_sessions_7day = sum(m.sessions_completed for m in seven_day_metrics)
         total_sessions_30day = sum(m.sessions_completed for m in metrics)
 
         # Mock alert counts (would come from alerts table)
         alerts_count = {
-            "critical": performance_distribution["Needs Support"],
-            "warning": performance_distribution["Developing"],
+            "critical": performance_distribution.get("At Risk", 0) + performance_distribution.get("Needs Attention", 0),
+            "warning": performance_distribution.get("Developing", 0),
             "info": 0,
         }
 
@@ -137,10 +167,11 @@ async def _get_analytics(db: AsyncSession) -> dict:
             "total_tutors": 0,
             "active_tutors": 0,
             "performance_distribution": {
-                "Needs Support": 0,
-                "Developing": 0,
-                "Strong": 0,
                 "Exemplary": 0,
+                "Strong": 0,
+                "Developing": 0,
+                "Needs Attention": 0,
+                "At Risk": 0,
             },
             "avg_rating": 0,
             "avg_engagement_score": 0,

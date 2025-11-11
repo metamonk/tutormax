@@ -19,25 +19,25 @@ import { InterventionTaskList } from '@/components/dashboard/InterventionTaskLis
 import { PerformanceTiers } from '@/components/dashboard/PerformanceTiers';
 import { ExportButton } from '@/components/dashboard/ExportButton';
 import { CustomReportBuilder } from '@/components/dashboard/CustomReportBuilder';
+import { ThemeToggle } from '@/components/theme-toggle';
+import { Breadcrumb } from '@/components/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { ChartSkeleton, CardSkeleton } from '@/components/ui/skeleton-patterns';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Lazy load heavy chart components with loading fallback
 const PerformanceAnalytics = dynamic(
   () => import('@/components/dashboard/PerformanceAnalytics').then(mod => ({ default: mod.PerformanceAnalytics })),
   {
     loading: () => (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-center h-64">
-            <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
-            <span className="ml-3 text-gray-500">Loading analytics...</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid gap-6 md:grid-cols-2">
+        <CardSkeleton />
+        <CardSkeleton />
+      </div>
     ),
     ssr: false, // Charts should only render on client
   }
@@ -47,14 +47,13 @@ const AdvancedAnalytics = dynamic(
   () => import('@/components/dashboard/AdvancedAnalytics').then(mod => ({ default: mod.AdvancedAnalytics })),
   {
     loading: () => (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex items-center justify-center h-64">
-            <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
-            <span className="ml-3 text-gray-500">Loading advanced analytics...</span>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-6">
+        <ChartSkeleton />
+        <div className="grid gap-6 md:grid-cols-2">
+          <ChartSkeleton />
+          <ChartSkeleton />
+        </div>
+      </div>
     ),
     ssr: false,
   }
@@ -84,9 +83,20 @@ const ContributionGraphLazy = dynamic(
   })),
   {
     loading: () => (
-      <div className="flex items-center justify-center h-32">
-        <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
-        <span className="ml-2 text-sm text-gray-500">Loading heatmap...</span>
+      <div className="space-y-2">
+        <div className="flex gap-1">
+          {Array.from({ length: 53 }).map((_, i) => (
+            <div key={i} className="flex flex-col gap-1">
+              {Array.from({ length: 7 }).map((_, j) => (
+                <Skeleton key={`${i}-${j}`} className="h-3 w-3 rounded-sm" />
+              ))}
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-between items-center pt-2">
+          <Skeleton className="h-3 w-32" />
+          <Skeleton className="h-3 w-24" />
+        </div>
       </div>
     ),
     ssr: false,
@@ -128,52 +138,55 @@ export default function DashboardPage() {
   }, [mounted]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      <div className="container mx-auto py-6 px-4 space-y-6">
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto max-w-[1400px] space-y-8 p-6 lg:p-8">
+        {/* Breadcrumb */}
+        <Breadcrumb />
+
         {/* Header */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl">TutorMax Operations Dashboard</CardTitle>
-                <CardDescription>
-                  {isAuthenticated
-                    ? `Welcome back, ${user?.full_name}`
-                    : 'Real-time tutor performance monitoring'}
-                </CardDescription>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  {state.connected ? (
-                    <Wifi className="h-5 w-5 text-green-600" />
-                  ) : (
-                    <WifiOff className="h-5 w-5 text-red-600" />
-                  )}
-                  <div className="text-sm">
-                    <Badge variant={state.connected ? 'default' : 'destructive'}>
-                      {connectionStatus}
-                    </Badge>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Last update: {lastUpdateTime}
-                    </p>
-                  </div>
-                </div>
-                {/* Export and Report Tools */}
-                <CustomReportBuilder />
-                <ExportButton
-                  reportType="tutor-performance"
-                  filters={{
-                    start_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
-                    end_date: new Date(),
-                  }}
-                />
-                <Button variant="outline" size="sm" onClick={() => router.push('/')}>
-                  ← Back to Home
-                </Button>
-              </div>
+        <div className="space-y-6">
+          <div className="flex items-start justify-between">
+            <div className="space-y-2">
+              <h1 className="text-balance text-3xl font-bold tracking-tight lg:text-4xl">
+                Tutor Performance Dashboard
+              </h1>
+              <p className="text-pretty text-muted-foreground">
+                {isAuthenticated
+                  ? `Welcome back, ${user?.full_name} • Real-time performance monitoring`
+                  : 'Real-time tutor performance monitoring and analytics'}
+              </p>
             </div>
-          </CardHeader>
-        </Card>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 shadow-sm">
+                {state.connected ? (
+                  <Wifi className="h-4 w-4 text-emerald-600" />
+                ) : (
+                  <WifiOff className="h-4 w-4 text-red-600" />
+                )}
+                <div className="text-sm">
+                  <Badge variant={state.connected ? 'default' : 'destructive'} className="font-medium">
+                    {connectionStatus}
+                  </Badge>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {lastUpdateTime}
+                  </p>
+                </div>
+              </div>
+              <ThemeToggle />
+              <CustomReportBuilder />
+              <ExportButton
+                reportType="tutor-performance"
+                filters={{
+                  start_date: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+                  end_date: new Date(),
+                }}
+              />
+              <Button variant="outline" size="sm" onClick={() => router.push('/')}>
+                ← Home
+              </Button>
+            </div>
+          </div>
+        </div>
 
         {/* Critical Alerts Section */}
         <section>
@@ -194,7 +207,7 @@ export default function DashboardPage() {
 
         {/* Activity Heatmap Section */}
         <section>
-          <Card>
+          <Card className="border-border bg-card shadow-sm">
             <CardHeader>
               <CardTitle>Activity Heatmap</CardTitle>
               <CardDescription>
@@ -209,28 +222,25 @@ export default function DashboardPage() {
 
         {/* Main Dashboard Tabs */}
         <section>
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
+          <Tabs defaultValue="overview" className="space-y-8">
+            <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="interventions">Interventions</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" className="space-y-6">
-              {/* Performance Analytics Section */}
+            <TabsContent value="overview" className="space-y-8">
               <PerformanceAnalytics
                 analytics={state.analytics}
                 tutorMetrics={state.tutorMetrics}
               />
             </TabsContent>
 
-            <TabsContent value="analytics" className="space-y-6">
-              {/* Advanced Analytics Section */}
+            <TabsContent value="analytics" className="space-y-8">
               <AdvancedAnalytics />
             </TabsContent>
 
-            <TabsContent value="interventions" className="space-y-6">
-              {/* Intervention Tasks Section */}
+            <TabsContent value="interventions" className="space-y-8">
               <InterventionTaskList
                 tasks={state.interventionTasks}
                 onUpdateStatus={updateInterventionStatus}

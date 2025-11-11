@@ -39,6 +39,11 @@ export function PredictiveInsights() {
     const fetchData = async () => {
       try {
         const response = await fetch('http://localhost:8000/api/analytics/predictive-insights/trends?forecast_days=30');
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch predictive insights: ${response.status} ${response.statusText}`);
+        }
+
         const trends = await response.json();
         setData(trends);
       } catch (error) {

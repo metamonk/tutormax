@@ -49,6 +49,11 @@ export function CohortAnalysis() {
     const fetchData = async () => {
       try {
         const response = await fetch('http://localhost:8000/api/analytics/cohort-analysis/retention-curve');
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch cohort data: ${response.status} ${response.statusText}`);
+        }
+
         const curveData = await response.json();
         setData(curveData);
       } catch (error) {

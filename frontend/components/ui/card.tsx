@@ -2,12 +2,24 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Card({ className, ...props }: React.ComponentProps<"div">) {
+function Card({
+  className,
+  interactive = false,
+  hoverable = false,
+  ...props
+}: React.ComponentProps<"div"> & {
+  interactive?: boolean
+  hoverable?: boolean
+}) {
   return (
     <div
       data-slot="card"
       className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm transition-all duration-250 transform-gpu",
+        // Subtle hover effect for hoverable cards (non-clickable but responsive)
+        hoverable && "hover:shadow-md hover:border-border/80",
+        // Strong interactive hover for clickable cards
+        interactive && "cursor-pointer hover:shadow-lg hover:-translate-y-1 hover:border-primary/20 active:translate-y-0 active:shadow-md",
         className
       )}
       {...props}

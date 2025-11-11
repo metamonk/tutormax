@@ -6,30 +6,13 @@ Runs health checks every minute to track >99.5% uptime SLA.
 """
 
 import logging
-import asyncio
-from celery import Task
 from datetime import datetime
 
 from src.workers.celery_app import celery_app
+from src.workers.utils.async_helper import run_async_task
 from src.api.uptime_service import get_uptime_monitor
 
 logger = logging.getLogger(__name__)
-
-
-class AsyncTask(Task):
-    """
-    Base task class for running async functions in Celery.
-    """
-
-    def __call__(self, *args, **kwargs):
-        """Run the task with asyncio support."""
-        return asyncio.get_event_loop().run_until_complete(
-            self.run_async(*args, **kwargs)
-        )
-
-    async def run_async(self, *args, **kwargs):
-        """Override this method with async implementation."""
-        raise NotImplementedError
 
 
 @celery_app.task(
@@ -62,7 +45,7 @@ def record_health_checks(self):
             uptime_monitor = get_uptime_monitor()
             return await uptime_monitor.record_all_health_checks()
 
-        result = asyncio.run(_run_health_check())
+        result = run_async_task(_run_health_check())
 
         logger.info(f"Health check completed: {result['overall_status']}")
 
@@ -116,7 +99,7 @@ def generate_uptime_report(self, hours: int = 24):
             uptime_monitor = get_uptime_monitor()
             return await uptime_monitor.get_uptime_report(hours=hours)
 
-        report = asyncio.run(_generate_report())
+        report = run_async_task(_generate_report())
 
         logger.info(
             f"Uptime report generated: {report['overall_uptime']}% uptime, "
@@ -268,7 +251,7 @@ def cleanup_old_health_checks(self, days_to_keep: int = 30):
                 deleted_count = result.rowcount
                 return deleted_count
 
-        deleted_count = asyncio.run(_cleanup())
+        deleted_count = run_async_task(_cleanup())
 
         logger.info(f"Cleanup completed: deleted {deleted_count} old health check records")
 

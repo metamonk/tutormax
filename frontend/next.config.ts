@@ -9,7 +9,16 @@ const nextConfig: NextConfig = {
 
   // Image optimization
   images: {
-    domains: ['localhost'],
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
+      {
+        protocol: 'https',
+        hostname: 'localhost',
+      },
+    ],
     formats: ['image/avif', 'image/webp'],
   },
 
@@ -24,13 +33,16 @@ const nextConfig: NextConfig = {
   // Experimental features for performance
   experimental: {
     optimizeCss: true,
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons', 'recharts', 'date-fns'],
   },
 
   // Output optimization
   output: 'standalone', // Optimize for Docker deployment
 
-  // Webpack optimizations
+  // Turbopack configuration (Next.js 16+ default)
+  turbopack: {},
+
+  // Webpack optimizations (fallback for --webpack flag)
   webpack: (config, { dev, isServer }) => {
     // Only enable in production
     if (!dev && !isServer) {
@@ -61,7 +73,7 @@ const nextConfig: NextConfig = {
             // Chart.js and heavy libraries
             charts: {
               name: 'charts',
-              test: /[\\/]node_modules[\\/](chart\.js|react-chartjs-2)[\\/]/,
+              test: /[\\/]node_modules[\\/](chart\.js|react-chartjs-2|recharts)[\\/]/,
               chunks: 'all',
               priority: 30,
             },

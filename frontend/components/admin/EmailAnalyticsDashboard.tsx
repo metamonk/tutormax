@@ -74,6 +74,11 @@ export default function EmailAnalyticsDashboard() {
     try {
       setLoading(true);
       const response = await fetch(`/api/email/campaigns/analytics/overview?days=${period}`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch email analytics: ${response.status} ${response.statusText}`);
+      }
+
       const data = await response.json();
 
       if (data.success) {

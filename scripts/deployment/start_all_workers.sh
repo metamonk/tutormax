@@ -84,7 +84,8 @@ celery -A src.workers.celery_app beat \
     --detach
 
 echo -e "${GREEN}Starting Flower monitoring...${NC}"
-celery -A src.workers.celery_app flower \
+# Set environment variable to allow unauthenticated API access (dev only)
+FLOWER_UNAUTHENTICATED_API=true celery -A src.workers.celery_app flower \
     --port=5555 \
     --logfile="$LOG_DIR/flower.log" \
     --detach
