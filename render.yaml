@@ -2,24 +2,27 @@
 # Deploys: FastAPI Backend, React Frontend, PostgreSQL, Redis, 5 Celery Workers
 # Estimated cost: ~$52/month for MVP deployment
 
-services:
-  # ============================================================================
-  # DATABASE SERVICES
-  # ============================================================================
+# ============================================================================
+# DATABASES
+# ============================================================================
 
+databases:
   # PostgreSQL Database
-  - type: pserv
-    name: tutormax-postgres
-    plan: starter  # $7/month, 256MB RAM, 1GB storage
+  - name: tutormax-postgres
+    plan: starter
     region: oregon
 
+# ============================================================================
+# SERVICES
+# ============================================================================
+
+services:
   # Redis Cache & Message Broker
   - type: redis
     name: tutormax-redis
-    plan: starter  # $7/month, 25MB RAM
+    plan: starter
     maxmemoryPolicy: allkeys-lru
     region: oregon
-    ipAllowList: []
 
   # ============================================================================
   # WEB SERVICE - FastAPI Backend
