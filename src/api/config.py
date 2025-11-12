@@ -4,8 +4,10 @@ Configuration settings for the TutorMax API.
 Uses pydantic-settings for environment variable management.
 """
 
-from typing import List
+from typing import List, Union
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+import json
 
 
 class Settings(BaseSettings):
@@ -146,6 +148,22 @@ class Settings(BaseSettings):
     alert_webhook_url: str = ""  # Generic webhook URL (e.g., PagerDuty Events API)
     pagerduty_routing_key: str = ""  # PagerDuty integration/routing key
     alert_dedup_window_minutes: int = 15  # Alert deduplication window
+
+    @field_validator('cors_origins', mode='before')
+    @classmethod
+    def parse_cors_origins(cls, v):
+        """Parse CORS origins from environment variable (JSON or comma-separated)."""
+        if isinstance(v, str):
+            # Try parsing as JSON first
+            try:
+                parsed = json.loads(v)
+                if isinstance(parsed, list):
+                    return parsed
+            except json.JSONDecodeError:
+                pass
+            # Fall back to comma-separated
+            return [origin.strip() for origin in v.split(',') if origin.strip()]
+        return v
 
     model_config = SettingsConfigDict(
         env_file=".env",
