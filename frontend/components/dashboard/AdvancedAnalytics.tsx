@@ -138,13 +138,13 @@ export function AdvancedAnalytics() {
           <Card>
             <CardHeader className="pb-3">
               <CardDescription>Total Tutors</CardDescription>
-              <CardTitle className="text-3xl">{overview.total_tutors}</CardTitle>
+              <CardTitle className="text-3xl">{overview.summary.total_tutors}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center text-sm">
                 <Users className="h-4 w-4 mr-2 text-blue-600" />
                 <span className="text-muted-foreground">
-                  {overview.active_tutors} active
+                  {overview.summary.active_tutors} active
                 </span>
               </div>
             </CardContent>
@@ -155,7 +155,7 @@ export function AdvancedAnalytics() {
             <CardHeader className="pb-3">
               <CardDescription>30-Day Churn Rate</CardDescription>
               <CardTitle className="text-3xl">
-                {overview.churn_rate_30d.toFixed(1)}%
+                {overview.summary.churn_rate_30d.toFixed(1)}%
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -180,7 +180,7 @@ export function AdvancedAnalytics() {
             <CardHeader className="pb-3">
               <CardDescription>Avg Retention Rate</CardDescription>
               <CardTitle className="text-3xl">
-                {overview.avg_retention_rate.toFixed(1)}%
+                {overview.summary.avg_retention_rate.toFixed(1)}%
               </CardTitle>
             </CardHeader>
             <CardContent>

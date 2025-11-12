@@ -14,7 +14,7 @@ export interface TutorMetrics {
   no_show_count: number;
   engagement_score: number;
   learning_objectives_met_pct: number;
-  performance_tier: 'Needs Support' | 'Developing' | 'Strong' | 'Exemplary';
+  performance_tier: 'Exemplary' | 'Strong' | 'Developing' | 'Needs Attention' | 'At Risk';
 }
 
 export interface Alert {
@@ -48,10 +48,11 @@ export interface PerformanceAnalytics {
   total_tutors: number;
   active_tutors: number;
   performance_distribution: {
-    'Needs Support': number;
-    'Developing': number;
-    'Strong': number;
     'Exemplary': number;
+    'Strong': number;
+    'Developing': number;
+    'Needs Attention': number;
+    'At Risk': number;
   };
   avg_rating: number;
   avg_engagement_score: number;

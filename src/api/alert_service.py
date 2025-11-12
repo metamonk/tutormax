@@ -199,7 +199,7 @@ class AlertService:
         tasks = []
 
         # Performance tier-based interventions
-        if metric.performance_tier == "Needs Support":
+        if metric.performance_tier == "Needs Attention":
             tasks.append({
                 "id": str(uuid.uuid4()),
                 "tutor_id": metric.tutor_id,
