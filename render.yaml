@@ -173,7 +173,7 @@ services:
     healthCheckPath: /
     envVars:
       - key: NODE_VERSION
-        value: 18.19.0
+        value: 20.11.0
       - key: PNPM_VERSION
         value: 9.0.0
       - key: NEXT_PUBLIC_API_URL
