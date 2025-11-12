@@ -109,16 +109,6 @@ export default function LoginPage() {
                   </div>
                 </div>
               </div>
-
-              <div className="rounded-lg border bg-card/50 p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle2 className="h-5 w-5 text-success" />
-                  <span className="font-semibold">Join 10,000+ educators</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Trusted by schools and tutoring organizations worldwide to deliver exceptional learning outcomes.
-                </p>
-              </div>
             </div>
           </div>
 
