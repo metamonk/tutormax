@@ -189,22 +189,23 @@ def upgrade() -> None:
     )
 
     # ==================== Notifications ====================
-    # Index for pending notifications
-    op.create_index(
-        'idx_notifications_pending',
-        'notifications',
-        ['status', 'priority', 'created_at'],
-        postgresql_using='btree',
-        postgresql_where=sa.text("status = 'pending'")
-    )
+    # NOTE: Notifications table doesn't exist yet - commenting out for now
+    # # Index for pending notifications
+    # op.create_index(
+    #     'idx_notifications_pending',
+    #     'notifications',
+    #     ['status', 'priority', 'created_at'],
+    #     postgresql_using='btree',
+    #     postgresql_where=sa.text("status = 'pending'")
+    # )
 
-    # Index for recipient notification history
-    op.create_index(
-        'idx_notifications_recipient',
-        'notifications',
-        ['recipient_id', 'created_at'],
-        postgresql_using='btree'
-    )
+    # # Index for recipient notification history
+    # op.create_index(
+    #     'idx_notifications_recipient',
+    #     'notifications',
+    #     ['recipient_id', 'created_at'],
+    #     postgresql_using='btree'
+    # )
 
     # ==================== Audit Logs ====================
     # Composite index for user activity tracking (already created in previous migration)
@@ -262,9 +263,9 @@ def downgrade() -> None:
     op.drop_index('idx_events_type_timestamp', 'tutor_events')
     op.drop_index('idx_events_metadata_gin', 'tutor_events')
 
-    # Notifications
-    op.drop_index('idx_notifications_pending', 'notifications')
-    op.drop_index('idx_notifications_recipient', 'notifications')
+    # Notifications (commented out - table doesn't exist)
+    # op.drop_index('idx_notifications_pending', 'notifications')
+    # op.drop_index('idx_notifications_recipient', 'notifications')
 
     # Audit Logs
     op.drop_index('idx_audit_logs_action_timestamp', 'audit_logs')
