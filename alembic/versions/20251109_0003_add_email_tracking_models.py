@@ -94,7 +94,7 @@ def upgrade() -> None:
         sa.Column('event_id', sa.String(50), primary_key=True),
         sa.Column('message_id', sa.String(50), sa.ForeignKey('email_messages.message_id', ondelete='CASCADE'), nullable=False, index=True),
         sa.Column('event_type', sa.String(20), nullable=False),  # sent, delivered, opened, clicked, bounced, failed, unsubscribed
-        sa.Column('event_time', sa.DateTime(timezone=True), nullable=False, index=True),
+        sa.Column('event_time', sa.DateTime(timezone=True), nullable=False),
         sa.Column('user_agent', sa.Text(), nullable=True),
         sa.Column('ip_address', sa.String(45), nullable=True),
         sa.Column('link_url', sa.Text(), nullable=True),  # For click events
