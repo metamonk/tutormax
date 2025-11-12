@@ -101,8 +101,9 @@ def upgrade() -> None:
         sa.Column('event_data', postgresql.JSONB(), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     )
-    op.create_index('ix_email_tracking_events_event_type', 'email_tracking_events', ['event_type'])
-    op.create_index('ix_email_tracking_events_event_time', 'email_tracking_events', ['event_time'])
+    # Indexes are auto-created from column definitions with index=True
+    # op.create_index('ix_email_tracking_events_event_type', 'email_tracking_events', ['event_type'])
+    # op.create_index('ix_email_tracking_events_event_time', 'email_tracking_events', ['event_time'])
 
     # Email preferences table (unsubscribe management)
     op.create_table(
@@ -143,7 +144,7 @@ def upgrade() -> None:
     )
     op.create_index('ix_email_workflow_state_workflow_type', 'email_workflow_state', ['workflow_type'])
     op.create_index('ix_email_workflow_state_status', 'email_workflow_state', ['status'])
-    op.create_index('ix_email_workflow_state_trigger_at', 'email_workflow_state', ['trigger_at'])
+    # op.create_index('ix_email_workflow_state_trigger_at', 'email_workflow_state', ['trigger_at'])  # Auto-created by index=True
     op.create_index('ix_email_workflow_state_entity', 'email_workflow_state', ['entity_type', 'entity_id'])
 
 
