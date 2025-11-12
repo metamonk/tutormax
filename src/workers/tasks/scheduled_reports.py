@@ -416,7 +416,7 @@ async def _get_operations_manager_emails(db) -> List[str]:
         List of email addresses
     """
     stmt = select(User.email).where(
-        User.roles.any(UserRole.OPERATIONS_MANAGER)
+        User.roles.contains([UserRole.OPERATIONS_MANAGER])
     )
     result = await db.execute(stmt)
     emails = [row[0] for row in result.all()]
