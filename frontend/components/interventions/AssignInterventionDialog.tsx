@@ -78,12 +78,14 @@ export function AssignInterventionDialog({
   };
 
   const getInitials = (name: string) => {
+    if (!name || typeof name !== 'string') return 'ST';
     return name
       .split(' ')
+      .filter((n) => n.length > 0)
       .map((n) => n[0])
       .join('')
       .toUpperCase()
-      .slice(0, 2);
+      .slice(0, 2) || 'ST';
   };
 
   if (!intervention) return null;

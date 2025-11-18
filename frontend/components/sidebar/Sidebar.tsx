@@ -261,11 +261,14 @@ export function Sidebar() {
               >
                 <Avatar className="h-8 w-8 shrink-0">
                   <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground text-sm">
-                    {user?.full_name
+                    {user?.full_name && typeof user.full_name === 'string'
                       ? user.full_name
                           .split(' ')
+                          .filter((n) => n.length > 0)
                           .map((n) => n[0])
                           .join('')
+                          .toUpperCase()
+                          .slice(0, 2) || 'U'
                       : 'U'}
                   </AvatarFallback>
                 </Avatar>

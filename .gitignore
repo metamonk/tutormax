@@ -132,3 +132,5 @@ frontend/public/workbox-*.js.map
 *.prof
 *.lprof
 .profiling/
+
+.credentials
