@@ -429,3 +429,98 @@ async def get_tutor_profile(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve tutor profile"
         )
+
+
+@router.get("/{tutor_id}/feedback")
+async def get_tutor_feedback(
+    tutor_id: str,
+    limit: int = 20,
+    offset: int = 0,
+    db: AsyncSession = Depends(get_async_session),
+):
+    """
+    Get student feedback for a specific tutor's sessions.
+
+    Returns a list of feedback with ratings from students for this tutor's sessions.
+
+    Args:
+        tutor_id: The tutor's unique identifier
+        limit: Maximum number of feedback entries to return (default: 20)
+        offset: Number of entries to skip (for pagination)
+        db: Database session
+
+    Returns:
+        List of feedback with ratings and session details
+    """
+    try:
+        # Check if tutor exists
+        result = await db.execute(
+            select(Tutor).where(Tutor.tutor_id == tutor_id)
+        )
+        tutor = result.scalar_one_or_none()
+
+        if not tutor:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Tutor {tutor_id} not found"
+            )
+
+        # Get feedback with session information
+        feedback_query = (
+            select(StudentFeedback, SessionModel)
+            .join(SessionModel, StudentFeedback.session_id == SessionModel.session_id)
+            .where(StudentFeedback.tutor_id == tutor_id)
+            .order_by(desc(StudentFeedback.feedback_date))
+            .limit(limit)
+            .offset(offset)
+        )
+
+        result = await db.execute(feedback_query)
+        results = result.all()
+
+        # Get total count for pagination
+        count_result = await db.execute(
+            select(func.count()).select_from(StudentFeedback).where(StudentFeedback.tutor_id == tutor_id)
+        )
+        total_count = count_result.scalar()
+
+        feedback_list = []
+        for feedback, session in results:
+            feedback_data = {
+                "feedback_id": feedback.feedback_id,
+                "session_id": feedback.session_id,
+                "student_id": feedback.student_id,
+                "session_date": session.scheduled_start.isoformat(),
+                "rating": feedback.overall_rating,
+                "feedback_text": feedback.feedback_text,
+                "would_recommend": feedback.would_recommend,
+                "subject": session.subject,
+                "communication_rating": feedback.communication_rating,
+                "knowledge_rating": feedback.knowledge_rating,
+                "patience_rating": feedback.patience_rating,
+                "preparedness_rating": feedback.preparedness_rating,
+                "feedback_date": feedback.feedback_date.isoformat(),
+            }
+            feedback_list.append(feedback_data)
+
+        return {
+            "success": True,
+            "tutor_id": tutor_id,
+            "feedback": feedback_list,
+            "pagination": {
+                "total": total_count,
+                "limit": limit,
+                "offset": offset,
+                "has_more": (offset + limit) < total_count
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get feedback for tutor {tutor_id}: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve tutor feedback"
+        )
